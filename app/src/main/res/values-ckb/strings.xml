@@ -71,7 +71,7 @@
     <string name="header_title_text">LineageOS\n%1$s</string>
     <string name="header_android_version">ئەندرۆید %1$s</string>
     <string name="header_last_updates_check">دواین پشکنین: %1$s (%2$s)</string>
-    <string name="list_build_version">LineageOS %1$s</string>
+    <string name="list_build_version">CubeOS %1$s</string>
     <string name="list_build_version_date">LineageOS %1$s - %2$s</string>
     <string name="list_download_progress_newer">%1$s لە %2$s</string>
     <string name="list_download_progress_eta_newer">%1$s لە %2$s (%3$s ماوە)</string>
