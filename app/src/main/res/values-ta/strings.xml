@@ -68,7 +68,7 @@
     <string name="snack_download_verification_failed">இற்றைத்தேர்வு தோற்றது.</string>
     <string name="snack_download_verified">பதிவிறக்கமுற்றது.</string>
     <string name="snack_update_not_installable">இப்பதிப்பின்மேல் இவ்விற்றை நிறுவவியலாது.</string>
-    <string name="header_title_text">LineageOS\n%1$s</string>
+    <string name="header_title_text">CubeOS\n%1$s</string>
     <string name="header_android_version">Android <xliff:g id="version" example="7.1.2">%1$s</xliff:g></string>
     <string name="header_last_updates_check">முற்சரிபார்த்தது: <xliff:g id="date" example="1 January 1970">%1$s</xliff:g> (<xliff:g id="time" example="01:23">%2$s</xliff:g>)</string>
     <string name="list_build_version">CubeOS <xliff:g id="version" example="14.1">%1$s</xliff:g></string>
@@ -120,7 +120,7 @@
     <string name="ongoing_channel_title">நடைபெறும் பதிவிறக்கங்கள்</string>
     <string name="update_failed_channel_title">இற்றை தோல்வியுற்றது</string>
     <string name="info_dialog_title">உங்களுக்குத் தெரியுமா?</string>
-    <string name="info_dialog_message">LineageOS இற்றைகள் முழு நிறுவல் தொகுப்புகளாகும். அஃதாவது, நீங்கள் இடையில் சிலவற்றைத் தவிர்த்தாலும், எப்போதும் அண்மை இற்றையை மட்டுமே நிறுவ முடியும்!</string>
+    <string name="info_dialog_message">CubeOS இற்றைகள் முழு நிறுவல் தொகுப்புகளாகும். அஃதாவது, நீங்கள் இடையில் சிலவற்றைத் தவிர்த்தாலும், எப்போதும் அண்மை இற்றையை மட்டுமே நிறுவ முடியும்!</string>
     <string name="info_dialog_ok">தகவலுக்கு நன்றி!</string>
     <string name="local_update_import">உள்ளக இற்றை</string>
     <string name="local_update_import_progress">உள்ளக இற்றை இறக்குமதி செய்யப்படுகிறது\u2026</string>

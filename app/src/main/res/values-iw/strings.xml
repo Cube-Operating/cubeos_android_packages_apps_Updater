@@ -67,7 +67,7 @@
     <string name="snack_download_verification_failed">אימות העדכון נכשל.</string>
     <string name="snack_download_verified">ההורדה הושלמה.</string>
     <string name="snack_update_not_installable">אין אפשרות להתקין עדכון זה מהגרסה הקיימת.</string>
-    <string name="header_title_text">LineageOS\n%1$s</string>
+    <string name="header_title_text">CubeOS\n%1$s</string>
     <string name="header_android_version">אנדרואיד <xliff:g id="version" example="7.1.2">%1$s</xliff:g></string>
     <string name="header_last_updates_check">בדיקה אחרונה: <xliff:g id="date" example="1 January 1970">%1$s</xliff:g> (<xliff:g id="time" example="01:23">%2$s</xliff:g>)</string>
     <string name="list_build_version">CubeOS <xliff:g id="version" example="14.1">%1$s</xliff:g></string>
@@ -122,7 +122,7 @@
     <string name="ongoing_channel_title">הורדות פעילות</string>
     <string name="update_failed_channel_title">העדכון נכשל</string>
     <string name="info_dialog_title">הידעת?</string>
-    <string name="info_dialog_message">עדכוני LineageOS הם חבילות התקנה מלאות. המשמעות היא שתמיד ניתן להתקין רק את העדכון האחרון, גם אם דילגת על חלק מהעדכונים!</string>
+    <string name="info_dialog_message">עדכוני CubeOS הם חבילות התקנה מלאות. המשמעות היא שתמיד ניתן להתקין רק את העדכון האחרון, גם אם דילגת על חלק מהעדכונים!</string>
     <string name="info_dialog_ok">תודה על המידע!</string>
     <string name="local_update_import">עדכון מקומי</string>
     <string name="local_update_import_progress">ייבוא עדכון מקומי\u2026</string>

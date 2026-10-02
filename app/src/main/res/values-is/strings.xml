@@ -62,7 +62,7 @@
     <string name="snack_download_verification_failed">Sannvottun uppfærslu mistókst.</string>
     <string name="snack_download_verified">Niðurhali er lokið.</string>
     <string name="snack_update_not_installable">Þessa uppfærslu er ekki gægt að setja upp á þessari samsetningu.</string>
-    <string name="header_title_text">LineageOS\n%1$s</string>
+    <string name="header_title_text">CubeOS\n%1$s</string>
     <string name="header_android_version">Android <xliff:g id="version" example="7.1.2">%1$s</xliff:g></string>
     <string name="header_last_updates_check">Síðast kannað: <xliff:g id="date" example="1 January 1970">%1$s</xliff:g> (<xliff:g id="time" example="01:23">%2$s</xliff:g>)</string>
     <string name="list_build_version">CubeOS <xliff:g id="version" example="14.1">%1$s</xliff:g></string>
@@ -114,7 +114,7 @@
     <string name="ongoing_channel_title">Niðurhal í gangi</string>
     <string name="update_failed_channel_title">Uppfærsla mistókst</string>
     <string name="info_dialog_title">Vissir þú?</string>
-    <string name="info_dialog_message">Uppfærslur á LineageOS eru alltaf heilir uppsetningapakkar. Það þýðir að þú getur alltaf sett einungis upp nýjustu uppfærsluna, jafnvel þótt þú hafir sleppt einhverjum uppfærslum í millitíðinni!</string>
+    <string name="info_dialog_message">Uppfærslur á CubeOS eru alltaf heilir uppsetningapakkar. Það þýðir að þú getur alltaf sett einungis upp nýjustu uppfærsluna, jafnvel þótt þú hafir sleppt einhverjum uppfærslum í millitíðinni!</string>
     <string name="info_dialog_ok">Takk fyrir upplýsingarnar!</string>
     <string name="local_update_import">Staðbundin uppfærsla</string>
     <string name="local_update_import_progress">Flyt inn staðbundna uppfærslu\u2026</string>

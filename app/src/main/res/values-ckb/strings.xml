@@ -68,7 +68,7 @@
     <string name="snack_download_verification_failed">پشکنینی نوێکاری سەرکەوتوو نەبوو.</string>
     <string name="snack_download_verified">داگرتن تەواو بوو.</string>
     <string name="snack_update_not_installable">ئەم نوێکارییە ناتوانرێت لەسەر ئەم وەشانەی ئێستا دابمەزرێنرێت.</string>
-    <string name="header_title_text">LineageOS\n%1$s</string>
+    <string name="header_title_text">CubeOS\n%1$s</string>
     <string name="header_android_version">ئەندرۆید %1$s</string>
     <string name="header_last_updates_check">دواین پشکنین: %1$s (%2$s)</string>
     <string name="list_build_version">CubeOS %1$s</string>
@@ -120,7 +120,7 @@
     <string name="ongoing_channel_title">داگرتنە بەردەوامەکان</string>
     <string name="update_failed_channel_title">نوێکردنەوە سەرکەوتوو نەبوو</string>
     <string name="info_dialog_title">ئایا دەزانیت؟</string>
-    <string name="info_dialog_message">نوێکارییەکانی LineageOS پاکێجی تەواوی دامەزراندنن. ئەمە واتە دەتوانیت هەمیشە تەنها دواین نوێکاری دابمەزرێنیت، تەنانەت ئەگەر هەندێک نوێکاری پێشووت تێپەڕاندبێت!</string>
+    <string name="info_dialog_message">نوێکارییەکانی CubeOS پاکێجی تەواوی دامەزراندنن. ئەمە واتە دەتوانیت هەمیشە تەنها دواین نوێکاری دابمەزرێنیت، تەنانەت ئەگەر هەندێک نوێکاری پێشووت تێپەڕاندبێت!</string>
     <string name="info_dialog_ok">سوپاس بۆ زانیارییەکە!</string>
     <string name="local_update_import">نوێکاری ناوخۆیی</string>
     <string name="local_update_import_progress">هێنانی نوێکاری ناوخۆیی\u2026</string>
