@@ -15,8 +15,8 @@
      limitations under the License.
 -->
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
-    <string name="app_name">Uuendaja</string>
-    <string name="display_name">Uuendaja</string>
+    <string name="app_name">Cube Update</string>
+    <string name="display_name">Cube Update</string>
     <string name="installation_suspended_notification">Installimine peatati</string>
     <string name="text_download_speed">%1$s, %2$s/s</string>
     <string name="suspend_button">Peata</string>
