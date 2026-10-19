@@ -158,6 +158,17 @@ public class Utils {
             }
         }
 
+        // CubeOS: every build contains everything before it, so only the newest is offered.
+        if (compatibleOnly && updates.size() > 1) {
+            UpdateInfo newest = updates.get(0);
+            for (UpdateInfo update : updates) {
+                if (update.getTimestamp() > newest.getTimestamp()) {
+                    newest = update;
+                }
+            }
+            updates.clear();
+            updates.add(newest);
+        }
         return updates;
     }
 
@@ -406,10 +417,14 @@ public class Utils {
     }
 
     public static boolean isUpdateCheckEnabled(Context context) {
-        return getUpdateCheckSetting(context) != Constants.AUTO_UPDATES_CHECK_INTERVAL_NEVER;
+        return AutoUpdate.isEnabled(context)
+                || getUpdateCheckSetting(context) != Constants.AUTO_UPDATES_CHECK_INTERVAL_NEVER;
     }
 
     public static long getUpdateCheckInterval(Context context) {
+        if (AutoUpdate.isEnabled(context)) {
+            return AlarmManager.INTERVAL_DAY;
+        }
         switch (Utils.getUpdateCheckSetting(context)) {
             case Constants.AUTO_UPDATES_CHECK_INTERVAL_DAILY:
                 return AlarmManager.INTERVAL_DAY;

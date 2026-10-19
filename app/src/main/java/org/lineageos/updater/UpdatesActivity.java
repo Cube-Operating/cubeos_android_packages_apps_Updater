@@ -393,6 +393,17 @@ public class UpdatesActivity extends UpdatesListActivity implements UpdateImport
             updatesOnline.add(update.getDownloadId());
         }
         controller.setUpdatesAvailableOnline(updatesOnline, true);
+        // CubeOS: only the newest build is offered; drop what's left of older ones (a paused
+        // download, a downloaded file), unless it's being installed or waiting for a restart.
+        for (UpdateInfo old : controller.getUpdates()) {
+            String id = old.getDownloadId();
+            if (updatesOnline.contains(id) || controller.isInstallingUpdate(id)
+                    || controller.isWaitingForReboot(id)) {
+                continue;
+            }
+            controller.pauseDownload(id);
+            controller.deleteUpdate(id);
+        }
 
         if (manualRefresh) {
             showSnackbar(

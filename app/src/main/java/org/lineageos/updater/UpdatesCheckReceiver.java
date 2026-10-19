@@ -31,6 +31,7 @@ import androidx.preference.PreferenceManager;
 
 import org.json.JSONException;
 import org.lineageos.updater.download.DownloadClient;
+import org.lineageos.updater.misc.AutoUpdate;
 import org.lineageos.updater.misc.Constants;
 import org.lineageos.updater.misc.Utils;
 
@@ -102,6 +103,8 @@ public class UpdatesCheckReceiver extends BroadcastReceiver {
                             .apply();
                     // In case we set a one-shot check because of a previous failure
                     cancelUpdatesCheck(context);
+                    // CubeOS: download and install the newest build if automatic updates are on.
+                    AutoUpdate.maybeStart(context);
                 } catch (IOException | JSONException e) {
                     Log.e(TAG, "Could not parse list, scheduling new check", e);
                     scheduleUpdatesCheck(context);

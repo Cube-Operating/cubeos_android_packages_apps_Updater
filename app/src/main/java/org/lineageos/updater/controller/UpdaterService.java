@@ -38,6 +38,7 @@ import androidx.preference.PreferenceManager;
 import org.lineageos.updater.R;
 import org.lineageos.updater.UpdaterReceiver;
 import org.lineageos.updater.UpdatesActivity;
+import org.lineageos.updater.misc.AutoUpdate;
 import org.lineageos.updater.misc.Constants;
 import org.lineageos.updater.misc.StringGenerator;
 import org.lineageos.updater.misc.Utils;
@@ -57,6 +58,8 @@ public class UpdaterService extends Service {
     public static final String EXTRA_DOWNLOAD_ID = "extra_download_id";
     public static final String EXTRA_DOWNLOAD_CONTROL = "extra_download_control";
     public static final String ACTION_INSTALL_UPDATE = "action_install_update";
+    /** CubeOS: run automatic updates (see AutoUpdate). */
+    public static final String ACTION_AUTO_UPDATE = "action_auto_update";
     public static final String ACTION_INSTALL_STOP = "action_install_stop";
 
     public static final String ACTION_INSTALL_SUSPEND = "action_install_suspend";
@@ -190,6 +193,18 @@ public class UpdaterService extends Service {
                 mUpdaterController.pauseDownload(downloadId);
             } else {
                 Log.e(TAG, "Unknown download action");
+            }
+        } else if (ACTION_AUTO_UPDATE.equals(intent.getAction())) {
+            // Started from the background: be a foreground service straight away.
+            mNotificationBuilder.mActions.clear();
+            mNotificationBuilder.setSmallIcon(R.drawable.ic_system_update);
+            mNotificationBuilder.setContentText(getString(R.string.download_starting_notification));
+            mNotificationBuilder.setProgress(0, 0, true);
+            startForeground(NOTIFICATION_ID, mNotificationBuilder.build(),
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
+            if (!AutoUpdate.run(this, mUpdaterController)) {
+                stopForeground(STOP_FOREGROUND_REMOVE);
+                tryStopSelf();
             }
         } else if (ACTION_INSTALL_UPDATE.equals(intent.getAction())) {
             String downloadId = intent.getStringExtra(EXTRA_DOWNLOAD_ID);
@@ -355,6 +370,10 @@ public class UpdaterService extends Service {
                 mNotificationBuilder.setOngoing(false);
                 mNotificationBuilder.setAutoCancel(true);
                 mNotificationManager.notify(NOTIFICATION_ID, mNotificationBuilder.build());
+                // CubeOS: a download automatic updates started installs by itself.
+                if (AutoUpdate.isEnabled(this) && AutoUpdate.isAutomatic(this, update.getDownloadId())) {
+                    Utils.triggerUpdate(this, update.getDownloadId());
+                }
                 tryStopSelf();
                 break;
             }
