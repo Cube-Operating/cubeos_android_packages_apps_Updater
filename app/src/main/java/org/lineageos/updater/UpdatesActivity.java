@@ -397,8 +397,9 @@ public class UpdatesActivity extends UpdatesListActivity implements UpdateImport
         // download, a downloaded file), unless it's being installed or waiting for a restart.
         for (UpdateInfo old : controller.getUpdates()) {
             String id = old.getDownloadId();
-            if (updatesOnline.contains(id) || controller.isInstallingUpdate(id)
-                    || controller.isWaitingForReboot(id)) {
+            // A local update (Local update import) is never on the server's list: keep it.
+            if (Update.LOCAL_ID.equals(id) || updatesOnline.contains(id)
+                    || controller.isInstallingUpdate(id) || controller.isWaitingForReboot(id)) {
                 continue;
             }
             controller.pauseDownload(id);
