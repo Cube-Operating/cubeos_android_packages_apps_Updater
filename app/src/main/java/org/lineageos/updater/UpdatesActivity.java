@@ -189,9 +189,12 @@ public class UpdatesActivity extends UpdatesListActivity implements UpdateImport
 
         updateLastCheckedString();
 
+        // CubeOS: no "Android" line under the CubeOS version (owner's request, 2026-10-19);
+        // restore by uncommenting the setText and removing the GONE.
         TextView headerBuildVersion = findViewById(R.id.header_build_version);
-        headerBuildVersion.setText(
-                getString(R.string.header_android_version, Build.VERSION.RELEASE));
+        headerBuildVersion.setVisibility(View.GONE);
+        // headerBuildVersion.setText(
+        //         getString(R.string.header_android_version, Build.VERSION.RELEASE));
 
         TextView headerBuildDate = findViewById(R.id.header_build_date);
         headerBuildDate.setText(StringGenerator.getDateLocalizedUTC(this,
