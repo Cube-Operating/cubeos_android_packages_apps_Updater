@@ -61,7 +61,6 @@
     <string name="menu_show_changelog">Vis endringslogg</string>
     <string name="menu_ab_perf_mode">Prioriter oppdateringsprosessen</string>
     <string name="menu_update_recovery">Oppdater gjenoppretting</string>
-    <string name="toast_forced_update_recovery">Det går ikkje an å slå av oppdateringar for Lineage-gjenoppretting på denne eininga.</string>
     <string name="snack_updates_found">Fann nye oppdateringar</string>
     <string name="snack_no_updates_found">Fann ingen nye oppdateringar</string>
     <string name="snack_updates_check_failed">Klarte ikkje å sjå etter oppdateringar. Kontroller internettsambandet og prøv på nytt seinare. </string>

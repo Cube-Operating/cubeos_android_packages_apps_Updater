@@ -3,10 +3,27 @@
     <color name="theme_primary">#f5f5f5</color>
     <color name="theme_primary_dark">#e0e0e0</color>
     <color name="theme_accent">@*android:color/accent_device_default_light</color>
-    <color name="background">@android:color/system_neutral1_50</color>
+    <color name="background">#F2F2F7</color>
     <color name="toolbar_collapsed">@android:color/system_neutral1_100</color>
     <color name="tv_background">#FF0E0E0F</color>
     <color name="tv_card_background">#222222</color>
 
     <color name="inverted">#212121</color>
+
+    <!-- CubeOS: Cube Update look (grouped background, cards, labels, brand) -->
+    <color name="cube_card">#FFFFFF</color>
+    <color name="cube_label">#000000</color>
+    <color name="cube_secondary_label">#993C3C43</color>
+    <color name="cube_separator">#4D3C3C43</color>
+    <color name="cube_fill">#1F787880</color>
+    <color name="cube_accent">#4A47D6</color>
+    <color name="cube_accent_tonal">#1F4A47D6</color>
+    <color name="cube_on_accent">#FFFFFF</color>
+    <color name="cube_green">#34C759</color>
+    <color name="cube_red">#FF3B30</color>
+    <color name="cube_switch_thumb">#FFFFFF</color>
+    <color name="cube_switch_track_off">#29787880</color>
+    <color name="cube_brand_start">#7D7BFF</color>
+    <color name="cube_brand_center">#4A47D6</color>
+    <color name="cube_brand_end">#159C9B</color>
 </resources>

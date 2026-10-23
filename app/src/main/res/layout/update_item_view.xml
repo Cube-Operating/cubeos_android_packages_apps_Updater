@@ -1,123 +1,163 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView
+<!--
+     Copyright (C) 2026 Egoras / CubeOS
+     SPDX-License-Identifier: Apache-2.0
+
+     CubeOS: the update card. Version, build date and size, a status line, progress while
+     something is happening, What's New, and one big action.
+-->
+<LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    style="@style/CubeCard"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:focusable="true"
-    android:foreground="?attr/selectableItemBackground"
+    android:layout_marginBottom="24dp"
+    android:animateLayoutChanges="true"
     android:nextFocusRight="@+id/update_action"
-    android:layout_marginTop="8dp"
-    android:layout_marginStart="8dp"
-    android:layout_marginEnd="8dp"
-    app:cardCornerRadius="16dp"
-    app:contentPadding="16dp">
+    android:orientation="vertical"
+    android:padding="20dp">
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="horizontal"
-        android:weightSum="1"
-        android:baselineAligned="false">
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="@drawable/bg_cube_tile_small"
+            android:contentDescription="@null"
+            android:padding="10dp"
+            android:src="@drawable/ic_cube_glyph" />
 
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_marginStart="14dp"
+            android:layout_marginEnd="8dp"
             android:layout_weight="1"
             android:orientation="vertical">
 
             <TextView
                 android:id="@+id/build_version"
+                style="@style/CubeText.Headline"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:alpha="0.87"
-                android:drawablePadding="8dp"
                 android:maxLines="1"
-                android:paddingBottom="8sp"
-                android:textColor="?android:attr/textColorPrimary"
-                android:textSize="16sp"
-                tools:text="LineageOS 20" />
+                tools:text="CubeOS 1.1" />
 
             <TextView
                 android:id="@+id/build_date"
+                style="@style/CubeText.Footnote"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
                 android:maxLines="1"
-                android:textSize="14sp"
-                tools:text="18 June 2023" />
-
-            <RelativeLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:id="@+id/progress"
-                    android:visibility="invisible"
-                    tools:visibility="visible">
-
-                    <ProgressBar
-                        android:id="@+id/progress_bar"
-                        style="@style/Widget.AppCompat.ProgressBar.Horizontal"
-                        android:layout_width="0dp"
-                        android:layout_weight="1"
-                        android:layout_height="wrap_content"
-                        android:paddingTop="4sp"
-                        tools:progress="65" />
-
-                    <TextView
-                        android:id="@+id/progress_percent"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:paddingStart="8dp"
-                        android:paddingEnd="8dp"
-                        tools:text="65%" />
-                </LinearLayout>
-
-                <TextView
-                    android:id="@+id/progress_text"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_below="@id/progress"
-                    android:ellipsize="marquee"
-                    android:singleLine="true"
-                    android:visibility="invisible"
-                    tools:text="162 of 1.1 GB (3 minutes left)"
-                    tools:visibility="visible" />
-
-                <TextView
-                    android:id="@+id/build_size"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:paddingTop="8sp"
-                    android:singleLine="true"
-                    tools:text="1.1 GB"
-                    tools:visibility="invisible" />
-            </RelativeLayout>
+                tools:text="23 October 2026 · 1.1 GB" />
         </LinearLayout>
+
+        <ImageButton
+            android:id="@+id/update_menu"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/update_more_options"
+            android:scaleType="center"
+            android:src="@drawable/ic_more" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/update_status"
+        style="@style/CubeText.Subhead"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="18dp"
+        android:visibility="gone"
+        tools:text="Downloading"
+        tools:visibility="visible" />
+
+    <LinearLayout
+        android:id="@+id/progress"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:orientation="vertical"
+        android:visibility="gone"
+        tools:visibility="visible">
+
+        <ProgressBar
+            android:id="@+id/progress_bar"
+            style="@android:style/Widget.Material.ProgressBar.Horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="6dp"
+            android:indeterminateTint="@color/cube_accent"
+            android:max="100"
+            android:progressDrawable="@drawable/progress_cube"
+            tools:progress="65" />
 
         <LinearLayout
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
-            <ImageButton
-                android:id="@+id/update_menu"
-                style="?android:attr/actionOverflowButtonStyle"
+            android:layout_marginTop="8dp"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/progress_text"
+                style="@style/CubeText.Footnote"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:singleLine="true"
+                tools:text="720 MB of 1.1 GB · 3 minutes left" />
+
+            <TextView
+                android:id="@+id/progress_percent"
+                style="@style/CubeText.Footnote"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="end"
-                android:padding="8dp"
-                android:contentDescription="@null" />
-            <Button
-                android:id="@id/update_action"
-                style="@style/Widget.AppCompat.Button.Borderless.Colored"
-                android:background="?android:selectableItemBackgroundBorderless"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:padding="8dp"
-                tools:text="Pause" />
+                android:layout_marginStart="12dp"
+                android:fontFeatureSettings="tnum"
+                tools:text="65%" />
         </LinearLayout>
     </LinearLayout>
-</androidx.cardview.widget.CardView>
+
+    <LinearLayout
+        android:id="@+id/whats_new"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="18dp"
+        android:orientation="vertical">
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0.5dp"
+            android:layout_marginBottom="16dp"
+            android:background="@color/cube_separator" />
+
+        <TextView
+            style="@style/CubeText.Headline"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/whats_new_title"
+            android:textSize="15sp" />
+
+        <TextView
+            android:id="@+id/whats_new_body"
+            style="@style/CubeText.Subhead"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="@string/whats_new_default"
+            android:textColor="@color/cube_secondary_label" />
+    </LinearLayout>
+
+    <Button
+        android:id="@id/update_action"
+        style="@style/CubePill.Primary"
+        android:layout_width="match_parent"
+        android:layout_marginTop="22dp"
+        tools:text="Download and Install" />
+</LinearLayout>

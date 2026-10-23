@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     Copyright (C) 2026 Egoras / CubeOS
+     SPDX-License-Identifier: Apache-2.0
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <size android:width="31dp" android:height="31dp" />
+    <stroke android:width="2dp" android:color="#00000000" />
+    <solid android:color="@color/cube_switch_thumb" />
+</shape>

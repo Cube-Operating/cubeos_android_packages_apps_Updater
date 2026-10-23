@@ -58,8 +58,8 @@
     <string name="finalizing_package">Finalizing package installation</string>
     <string name="preparing_ota_first_boot">Preparing for first boot</string>
     <string name="dialog_prepare_zip_message">Preliminary update preparation</string>
-    <string name="dialog_battery_low_title">Low battery</string>
-    <string name="dialog_battery_low_message_pct">The battery level is too low, you need at least <xliff:g id="percent_discharging">%1$d</xliff:g>%% of the battery to continue, <xliff:g id="percent_charging">%2$d</xliff:g>%% if charging.</string>
+    <string name="dialog_battery_low_title">Battery too low</string>
+    <string name="dialog_battery_low_message_pct">Charge your phone to at least <xliff:g id="percent_discharging">%1$d</xliff:g>%% to install the update, or <xliff:g id="percent_charging">%2$d</xliff:g>%% while it\'s charging.</string>
     <string name="dialog_scratch_mounted_message">
         <![CDATA[
         Please run the following commands and retry the update:\n
@@ -73,7 +73,7 @@
     <string name="reboot">Reboot</string>
 
     <string name="menu_refresh">Refresh</string>
-    <string name="menu_preferences">Preferences</string>
+    <string name="menu_preferences">Advanced Options</string>
     <string name="menu_auto_updates_check">Auto updates check</string>
     <string name="menu_auto_updates_check_interval_daily">Once a day</string>
     <string name="menu_auto_updates_check_interval_weekly">Once a week</string>
@@ -87,7 +87,7 @@
     <string name="menu_changelog_url" translatable="false">https://download.lineageos.org/<xliff:g id="device_name">%1$s</xliff:g>/changes</string>
     <string name="menu_ab_perf_mode">Prioritize update process</string>
     <string name="menu_update_recovery">Update recovery</string>
-    <string name="toast_forced_update_recovery">It is impossible to disable Lineage Recovery updates on this device.</string>
+    <string name="toast_forced_update_recovery">Recovery is always kept up to date on this phone.</string>
 
     <string name="snack_updates_found">New updates found</string>
     <string name="snack_no_updates_found">No new updates found</string>
@@ -118,8 +118,8 @@
     <string name="action_delete">Delete</string>
     <string name="action_cancel">Cancel</string>
 
-    <string name="confirm_delete_dialog_title">Delete file</string>
-    <string name="confirm_delete_dialog_message">Delete the selected update file?</string>
+    <string name="confirm_delete_dialog_title">Delete download?</string>
+    <string name="confirm_delete_dialog_message">The downloaded update will be removed. You can download it again at any time.</string>
 
     <string name="apply_update_dialog_title">Apply update</string>
     <string name="apply_update_dialog_message">You are about to install <xliff:g id="update_name">%1$s</xliff:g>.\n\nIf you press <xliff:g id="ok">%2$s</xliff:g>, the device will restart itself in recovery mode to install the update.\n\nNote: This feature requires a compatible Recovery or updates will need to be installed manually.</string>
@@ -149,9 +149,9 @@
         <item quantity="other"><xliff:g id="count">%d</xliff:g> hours left</item>
     </plurals>
 
-    <string name="update_over_metered_network_title">Warning</string>
-    <string name="update_over_metered_network_message">You\'re about to download an update package over a metered network which is likely going to cause high data usage. Would you like to proceed?</string>
-    <string name="checkbox_metered_network_warning">Do not show again</string>
+    <string name="update_over_metered_network_title">Use mobile data?</string>
+    <string name="update_over_metered_network_message">Updates are large downloads. Over mobile data this may use a lot of your data plan.</string>
+    <string name="checkbox_metered_network_warning">Don\'t ask again</string>
     <string name="menu_metered_network_warning">Metered network warning</string>
 
     <string name="blocked_update_dialog_title">Update blocked</string>
@@ -167,7 +167,7 @@
     <string name="info_dialog_message">CubeOS updates are full installation packages. That means you can always install only the latest update, even if you skipped some in between!</string>
     <string name="info_dialog_ok">Thanks for the info!</string>
 
-    <string name="local_update_import">Local update</string>
+    <string name="local_update_import">Install from File</string>
     <string name="local_update_import_progress">Importing local update\u2026</string>
     <string name="local_update_import_success">%1$s has been imported. Do you want to install it?</string>
     <string name="local_update_import_failure">Failed to import local update</string>
@@ -176,4 +176,71 @@
 
     <string name="welcome_title">Welcome</string>
     <string name="welcome_message">Please note that when multiple updates are available, there is no need to go update-by-update, you can always install the latest one directly, and then safely delete old updates to free up storage space.</string>
+
+    <!-- CubeOS: Cube Update redesign -->
+    <string name="hero_title">CubeOS <xliff:g id="version" example="1.0">%1$s</xliff:g></string>
+    <string name="hero_build">Build <xliff:g id="build" example="1.0-20261023">%1$s</xliff:g></string>
+    <string name="status_up_to_date">CubeOS is up to date</string>
+    <string name="status_checking">Checking for updates…</string>
+    <string name="status_check_failed">Couldn\'t check for updates</string>
+    <string name="status_update_available">Update available</string>
+    <string name="status_downloading">Downloading update</string>
+    <string name="status_installing">Installing update</string>
+    <string name="status_restart">Restart to finish updating</string>
+    <string name="check_failed_detail">Check your internet connection and try again.</string>
+    <string name="last_checked_never">Not checked yet</string>
+    <string name="last_checked_today">Last checked today at <xliff:g id="time" example="08:46">%1$s</xliff:g></string>
+    <string name="last_checked_yesterday">Last checked yesterday at <xliff:g id="time" example="08:46">%1$s</xliff:g></string>
+    <string name="last_checked_date">Last checked <xliff:g id="date" example="1 January 2026">%1$s</xliff:g> at <xliff:g id="time" example="08:46">%2$s</xliff:g></string>
+
+    <string name="action_check_for_updates">Check for Updates</string>
+    <string name="action_checking">Checking…</string>
+    <string name="action_try_again">Try Again</string>
+    <string name="action_download_and_install">Download and Install</string>
+    <string name="action_install_now">Install Now</string>
+    <string name="action_restart_now">Restart Now</string>
+    <string name="action_details">Details</string>
+    <string name="action_stop">Stop</string>
+
+    <string name="update_more_options">More options</string>
+    <string name="card_meta"><xliff:g id="date" example="23 October 2026">%1$s</xliff:g> · <xliff:g id="size" example="1.1 GB">%2$s</xliff:g></string>
+    <string name="card_progress"><xliff:g id="done" example="720 MB">%1$s</xliff:g> of <xliff:g id="total" example="1.1 GB">%2$s</xliff:g></string>
+    <string name="card_progress_eta"><xliff:g id="done" example="720 MB">%1$s</xliff:g> of <xliff:g id="total" example="1.1 GB">%2$s</xliff:g> · <xliff:g id="eta" example="3 minutes left">%3$s</xliff:g></string>
+    <string name="card_starting">Starting download…</string>
+    <string name="card_downloading">Downloading</string>
+    <string name="card_paused">Paused</string>
+    <string name="card_download_error">The download stopped. Check your internet connection and try again.</string>
+    <string name="card_verifying">Verifying update…</string>
+    <string name="card_verified">Downloaded and verified. Ready to install.</string>
+    <string name="card_verification_failed">This download couldn\'t be verified, so it won\'t be installed. Try downloading it again.</string>
+    <string name="card_install_prep">Preparing update…</string>
+    <string name="card_installing">Installing. You can keep using your phone.</string>
+    <string name="card_finalizing">Finishing up…</string>
+    <string name="card_install_suspended">Installation paused</string>
+    <string name="card_install_failed">The update couldn\'t be installed. Please try again.</string>
+    <string name="card_waiting_reboot">Update installed. Restart your phone to finish.</string>
+    <string name="card_cannot_install">This update can\'t be installed on this phone.</string>
+
+    <string name="whats_new_title">What\'s New</string>
+    <string name="whats_new_default">Security and reliability improvements for your phone. Your apps, photos and settings stay just as they are.</string>
+
+    <string name="install_dialog_title">Install <xliff:g id="update_name" example="CubeOS 1.1">%1$s</xliff:g>?</string>
+    <string name="install_dialog_message_ab">It installs in the background while you keep using your phone. When it\'s ready, you\'ll be asked to restart.</string>
+    <string name="install_dialog_message">Your phone will restart to install it. This takes a few minutes; keep it charged and don\'t turn it off.</string>
+    <string name="install_dialog_install">Install</string>
+    <string name="cancel_install_dialog_message">Stop installing the update?</string>
+    <string name="cancel_install_keep">Keep Installing</string>
+    <string name="blocked_update_message">This update can\'t be installed on this phone from Cube Update.</string>
+
+    <string name="auto_update_title">Automatic Updates</string>
+    <string name="auto_update_switch">Download and Install</string>
+    <string name="auto_update_switch_summary">Keep CubeOS up to date by itself</string>
+    <string name="auto_update_mobile">Use Mobile Data</string>
+    <string name="auto_update_mobile_summary">Download updates when there\'s no Wi‑Fi</string>
+    <string name="auto_update_footer_on_wifi">New versions download over Wi‑Fi and install in the background. You\'ll be asked to restart when one is ready; your phone never restarts by itself.</string>
+    <string name="auto_update_footer_on_mobile">New versions download over Wi‑Fi or mobile data and install in the background. You\'ll be asked to restart when one is ready; your phone never restarts by itself.</string>
+    <string name="auto_update_footer_off">Check for updates here and install them when you\'re ready.</string>
+    <string name="state_on">On</string>
+    <string name="state_off">Off</string>
+    <string name="auto_update_failed">Couldn\'t change this setting</string>
 </resources>

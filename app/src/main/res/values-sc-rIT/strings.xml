@@ -60,7 +60,6 @@
     <string name="menu_show_changelog">Mustra su registru de modìficas</string>
     <string name="menu_ab_perf_mode">Prioriza su protzessu de atualizatzione</string>
     <string name="menu_update_recovery">Atualiza su recuperadore</string>
-    <string name="toast_forced_update_recovery">Non faghet a disativare is atualizatziones de su recuperadore de Lineage in custu dispositivu.</string>
     <string name="snack_updates_found">Atualizatziones noas agatadas</string>
     <string name="snack_no_updates_found">Nissuna atualizatzione noa agatada</string>
     <string name="snack_updates_check_failed">Controllu de atualizatzione faddidu. Controlla sa connessione a internet e torra a proare a pustis.</string>

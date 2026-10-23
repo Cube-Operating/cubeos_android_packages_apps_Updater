@@ -60,7 +60,6 @@
     <string name="menu_show_changelog">மாற்றப்பதிவுகாட்டு</string>
     <string name="menu_ab_perf_mode">இற்றைமுன்னுரிமை</string>
     <string name="menu_update_recovery">மீட்பு இற்றை</string>
-    <string name="toast_forced_update_recovery">இக்கருவியில் Lineage மீட்பு இற்றை முடக்கவியலாது.</string>
     <string name="snack_updates_found">புதிய இற்றை உளது</string>
     <string name="snack_no_updates_found">புதிய இற்றை இலது</string>
     <string name="snack_updates_check_failed">இற்றைத்தேர்வு தோற்றது! வலைத்தொடர்பு நோக்கிப் பின்மீட்டியக்குக.</string>

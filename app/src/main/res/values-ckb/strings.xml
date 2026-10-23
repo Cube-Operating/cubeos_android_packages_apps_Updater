@@ -60,7 +60,6 @@
     <string name="menu_show_changelog">نیشاندانی گۆڕانکارییەکان</string>
     <string name="menu_ab_perf_mode">پێشینەدان بە پڕۆسەی نوێکردنەوە</string>
     <string name="menu_update_recovery">نوێکردنەوەی Recovery (Recovery)</string>
-    <string name="toast_forced_update_recovery">ناتوانرێت نوێکردنەوەی Lineage Recovery لەم ئامێرەدا ناچالاک بکرێت.</string>
     <string name="snack_updates_found">نوێکاری نوێ دۆزرایەوە</string>
     <string name="snack_no_updates_found">هیچ نوێکارییەک نەدۆزرایەوە</string>
     <string name="snack_updates_check_failed">پشکنینی نوێکاری سەرکەوتوو نەبوو. تکایە هێڵی ئینتەرنێتەکەت بپشکنە و دواتر هەوڵ بدەرەوە.</string>

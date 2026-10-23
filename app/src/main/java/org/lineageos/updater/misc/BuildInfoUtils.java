@@ -29,4 +29,13 @@ public final class BuildInfoUtils {
     public static String getBuildVersion() {
         return SystemProperties.get(Constants.PROP_BUILD_VERSION);
     }
+
+    /** CubeOS: the full build name shown under the version, e.g. "1.0-20261023-RELEASE-ygf_f35". */
+    public static String getDisplayVersion() {
+        String display = SystemProperties.get("ro.cube.display.version");
+        if (display.isEmpty()) {
+            display = SystemProperties.get(Constants.PROP_BUILD_VERSION_INCREMENTAL);
+        }
+        return display;
+    }
 }

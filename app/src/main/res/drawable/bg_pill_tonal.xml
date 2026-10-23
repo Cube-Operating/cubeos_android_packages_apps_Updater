@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     Copyright (C) 2026 Egoras / CubeOS
+     SPDX-License-Identifier: Apache-2.0
+-->
+<!-- CubeOS: tinted pill for secondary actions. -->
+<ripple xmlns:android="http://schemas.android.com/apk/res/android"
+    android:color="@color/cube_fill">
+    <item>
+        <selector>
+            <item>
+                <shape android:shape="rectangle">
+                    <corners android:radius="100dp" />
+                    <solid android:color="@color/cube_accent_tonal" />
+                </shape>
+            </item>
+        </selector>
+    </item>
+</ripple>

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     Copyright (C) 2026 Egoras / CubeOS
+     SPDX-License-Identifier: Apache-2.0
+-->
+<!-- CubeOS: the cube mark, white on the brand tile. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- Top face, lit -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.38"
+        android:pathData="M12,3.2L19.6,7.4L12,11.6L4.4,7.4Z" />
+    <!-- Right face, in shade -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.14"
+        android:pathData="M12,11.6L19.6,7.4L19.6,16.2L12,20.6Z" />
+    <!-- Edges -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.6"
+        android:strokeLineJoin="round"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M12,3.2L19.6,7.4L19.6,16.2L12,20.6L4.4,16.2L4.4,7.4Z M4.4,7.4L12,11.6L19.6,7.4 M12,11.6L12,20.6" />
+</vector>

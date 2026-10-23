@@ -45,7 +45,8 @@ public final class AutoUpdate {
         return Settings.Global.getInt(context.getContentResolver(), SETTING, 1) == 1;
     }
 
-    private static boolean mobileAllowed(Context context) {
+    /** Whether automatic updates may download over mobile data, not only Wi-Fi. */
+    public static boolean mobileAllowed(Context context) {
         return Settings.Global.getInt(context.getContentResolver(), SETTING_MOBILE, 0) == 1;
     }
 

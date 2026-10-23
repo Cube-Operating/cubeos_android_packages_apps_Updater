@@ -26,23 +26,27 @@ import android.content.IntentFilter;
 import android.content.res.Configuration;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
+import android.database.ContentObserver;
 import android.icu.text.DateFormat;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
 import android.os.SystemProperties;
+import android.provider.Settings;
+import android.text.format.DateUtils;
+import android.transition.AutoTransition;
+import android.transition.TransitionManager;
 import android.util.Log;
-import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.animation.Animation;
-import android.view.animation.LinearInterpolator;
-import android.view.animation.RotateAnimation;
-import android.widget.RelativeLayout;
+import android.view.ViewGroup;
+import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -54,27 +58,31 @@ import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.SwitchCompat;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.core.widget.NestedScrollView;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.preference.PreferenceManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.SimpleItemAnimator;
 
-import com.google.android.material.appbar.AppBarLayout;
-import com.google.android.material.appbar.CollapsingToolbarLayout;
 import com.google.android.material.snackbar.Snackbar;
 
 import org.json.JSONException;
 import org.lineageos.updater.controller.UpdaterController;
 import org.lineageos.updater.controller.UpdaterService;
 import org.lineageos.updater.download.DownloadClient;
+import org.lineageos.updater.misc.AutoUpdate;
 import org.lineageos.updater.misc.BuildInfoUtils;
 import org.lineageos.updater.misc.Constants;
 import org.lineageos.updater.misc.StringGenerator;
 import org.lineageos.updater.misc.Utils;
 import org.lineageos.updater.model.Update;
 import org.lineageos.updater.model.UpdateInfo;
+import org.lineageos.updater.model.UpdateStatus;
 
 import java.io.File;
 import java.io.IOException;
@@ -90,10 +98,32 @@ public class UpdatesActivity extends UpdatesListActivity implements UpdateImport
 
     private UpdatesListAdapter mAdapter;
 
-    private View mRefreshIconView;
-    private RotateAnimation mRefreshAnimation;
-
     private boolean mIsTV;
+
+    // CubeOS: hero state (phones). See updateHero().
+    private enum HeroState {
+        UNKNOWN,
+        CHECKING,
+        CHECK_FAILED,
+        UP_TO_DATE,
+        AVAILABLE,
+        DOWNLOADING,
+        INSTALLING,
+        RESTART,
+    }
+
+    private boolean mChecking;
+    private boolean mCheckFailed;
+    private boolean mListLoaded;
+    private String mHeroKey;
+
+    private final ContentObserver mAutoUpdateObserver =
+            new ContentObserver(new Handler(Looper.getMainLooper())) {
+                @Override
+                public void onChange(boolean selfChange) {
+                    bindAutoUpdates(true);
+                }
+            };
 
     private UpdateInfo mToBeExported = null;
     private final ActivityResultLauncher<Intent> mExportUpdate = registerForActivityResult(
@@ -138,6 +168,7 @@ public class UpdatesActivity extends UpdatesListActivity implements UpdateImport
                     String downloadId = intent.getStringExtra(UpdaterController.EXTRA_DOWNLOAD_ID);
                     handleDownloadStatusChange(downloadId);
                     mAdapter.notifyItemChanged(downloadId);
+                    updateHero();
                 } else if (UpdaterController.ACTION_DOWNLOAD_PROGRESS.equals(intent.getAction()) ||
                         UpdaterController.ACTION_INSTALL_PROGRESS.equals(intent.getAction())) {
                     String downloadId = intent.getStringExtra(UpdaterController.EXTRA_DOWNLOAD_ID);
@@ -148,93 +179,97 @@ public class UpdatesActivity extends UpdatesListActivity implements UpdateImport
                     List<UpdateInfo> sortedUpdates =
                             mUpdaterService.getUpdaterController().getUpdates();
                     if (sortedUpdates.isEmpty()) {
-                        findViewById(R.id.no_new_updates_view).setVisibility(View.VISIBLE);
-                        findViewById(R.id.recycler_view).setVisibility(View.GONE);
+                        setUpdatesShown(false);
+                    } else {
+                        updateHero();
                     }
                 }
             }
         };
 
-        if (!mIsTV) {
-            Toolbar toolbar = findViewById(R.id.toolbar);
-            setSupportActionBar(toolbar);
-            ActionBar actionBar = getSupportActionBar();
-            if (actionBar != null) {
-                actionBar.setDisplayShowTitleEnabled(false);
-                actionBar.setDisplayHomeAsUpEnabled(true);
-                final int statusBarHeight;
-                TypedValue tv = new TypedValue();
-                if (getTheme().resolveAttribute(android.R.attr.actionBarSize, tv, true)) {
-                    statusBarHeight = TypedValue.complexToDimensionPixelSize(
-                            tv.data, getResources().getDisplayMetrics());
-                } else {
-                    statusBarHeight = 0;
-                }
-                RelativeLayout headerContainer = findViewById(R.id.header_container);
-                recyclerView.setOnApplyWindowInsetsListener((view, insets) -> {
-                    int top = insets.getInsets(WindowInsetsCompat.Type.statusBars()).top;
-                    CollapsingToolbarLayout.LayoutParams lp =
-                            (CollapsingToolbarLayout.LayoutParams)
-                                    headerContainer.getLayoutParams();
-                    lp.topMargin = top + statusBarHeight;
-                    headerContainer.setLayoutParams(lp);
-                    return insets;
-                });
-            }
-        }
-
         TextView headerTitle = findViewById(R.id.header_title);
-        headerTitle.setText(getString(R.string.header_title_text,
-                BuildInfoUtils.getBuildVersion()));
-
-        updateLastCheckedString();
-
-        // CubeOS: no "Android" line under the CubeOS version (owner's request, 2026-10-19);
-        // restore by uncommenting the setText and removing the GONE.
         TextView headerBuildVersion = findViewById(R.id.header_build_version);
-        headerBuildVersion.setVisibility(View.GONE);
-        // headerBuildVersion.setText(
-        //         getString(R.string.header_android_version, Build.VERSION.RELEASE));
-
-        TextView headerBuildDate = findViewById(R.id.header_build_date);
-        headerBuildDate.setText(StringGenerator.getDateLocalizedUTC(this,
-                DateFormat.LONG, BuildInfoUtils.getBuildDateTimestamp()));
-
         if (!mIsTV) {
-            // Switch between header title and appbar title minimizing overlaps
-            final CollapsingToolbarLayout collapsingToolbar = findViewById(R.id.collapsing_toolbar);
-            final AppBarLayout appBar = findViewById(R.id.app_bar);
-            appBar.addOnOffsetChangedListener(new AppBarLayout.OnOffsetChangedListener() {
-                boolean mIsShown = false;
-
-                @Override
-                public void onOffsetChanged(AppBarLayout appBarLayout, int verticalOffset) {
-                    int scrollRange = appBarLayout.getTotalScrollRange();
-                    if (!mIsShown && scrollRange + verticalOffset < 10) {
-                        collapsingToolbar.setTitle(getString(R.string.display_name));
-                        mIsShown = true;
-                    } else if (mIsShown && scrollRange + verticalOffset > 100) {
-                        collapsingToolbar.setTitle(null);
-                        mIsShown = false;
-                    }
-                }
-            });
-
-            mRefreshAnimation = new RotateAnimation(0, 360, Animation.RELATIVE_TO_SELF, 0.5f,
-                    Animation.RELATIVE_TO_SELF, 0.5f);
-            mRefreshAnimation.setInterpolator(new LinearInterpolator());
-            mRefreshAnimation.setDuration(1000);
-
-            if (!Utils.hasTouchscreen(this)) {
-                // This can't be collapsed without a touchscreen
-                appBar.setExpanded(false);
+            setUpPhoneLayout();
+            headerTitle.setText(getString(R.string.hero_title,
+                    BuildInfoUtils.getBuildVersion()));
+            // CubeOS: the build name, never the "Android" version (owner's request, 2026-10-19).
+            String build = BuildInfoUtils.getDisplayVersion();
+            if (build.isEmpty()) {
+                headerBuildVersion.setVisibility(View.GONE);
+            } else {
+                headerBuildVersion.setText(getString(R.string.hero_build, build));
             }
         } else {
+            headerTitle.setText(getString(R.string.header_title_text,
+                    BuildInfoUtils.getBuildVersion()));
+            // CubeOS: no "Android" line under the CubeOS version (owner's request, 2026-10-19).
+            headerBuildVersion.setVisibility(View.GONE);
+
+            TextView headerBuildDate = findViewById(R.id.header_build_date);
+            headerBuildDate.setText(StringGenerator.getDateLocalizedUTC(this,
+                    DateFormat.LONG, BuildInfoUtils.getBuildDateTimestamp()));
+
             findViewById(R.id.refresh).setOnClickListener(v -> downloadUpdatesList(true));
             findViewById(R.id.preferences).setOnClickListener(v -> showPreferencesDialog());
         }
 
-        maybeShowWelcomeMessage();
+        updateLastCheckedString();
+
+        if (mIsTV) {
+            // CubeOS: on phones the welcome note is gone; only the newest build is offered anyway.
+            maybeShowWelcomeMessage();
+        }
+    }
+
+    /** CubeOS: toolbar, edge-to-edge insets, the hero button and Automatic Updates. */
+    private void setUpPhoneLayout() {
+        // Draw behind the system bars; the insets listener below pads the content instead.
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+        ActionBar actionBar = getSupportActionBar();
+        if (actionBar != null) {
+            actionBar.setDisplayShowTitleEnabled(false);
+            actionBar.setDisplayHomeAsUpEnabled(true);
+        }
+
+        final View appBar = findViewById(R.id.app_bar);
+        final NestedScrollView scrollView = findViewById(R.id.scroll_view);
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main_container),
+                (view, insets) -> {
+                    Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars()
+                            | WindowInsetsCompat.Type.displayCutout());
+                    appBar.setPadding(bars.left, bars.top, bars.right, 0);
+                    scrollView.setPadding(bars.left, 0, bars.right, bars.bottom);
+                    return insets;
+                });
+
+        // The small title and hairline appear once the big title scrolls under the toolbar.
+        final View toolbarTitle = findViewById(R.id.toolbar_title);
+        final View toolbarDivider = findViewById(R.id.toolbar_divider);
+        final View headerTitle = findViewById(R.id.header_title);
+        scrollView.setOnScrollChangeListener((NestedScrollView.OnScrollChangeListener)
+                (v, scrollX, scrollY, oldScrollX, oldScrollY) -> {
+                    float start = headerTitle.getTop();
+                    float range = Math.max(1, headerTitle.getHeight());
+                    float alpha = Math.min(1f, Math.max(0f, (scrollY - start) / range));
+                    toolbarTitle.setAlpha(alpha);
+                    toolbarDivider.setAlpha(Math.min(1f, scrollY / 24f));
+                });
+
+        findViewById(R.id.check_button).setOnClickListener(v -> {
+            if (!mChecking) {
+                downloadUpdatesList(true);
+            }
+        });
+
+        findViewById(R.id.auto_update_row).setOnClickListener(v ->
+                setAutoUpdateSetting(AutoUpdate.SETTING, !AutoUpdate.isEnabled(this)));
+        findViewById(R.id.auto_update_mobile_row).setOnClickListener(v ->
+                setAutoUpdateSetting(AutoUpdate.SETTING_MOBILE, !AutoUpdate.mobileAllowed(this)));
+        bindAutoUpdates(false);
     }
 
     @Override
@@ -250,6 +285,16 @@ public class UpdatesActivity extends UpdatesListActivity implements UpdateImport
         intentFilter.addAction(UpdaterController.ACTION_INSTALL_PROGRESS);
         intentFilter.addAction(UpdaterController.ACTION_UPDATE_REMOVED);
         LocalBroadcastManager.getInstance(this).registerReceiver(mBroadcastReceiver, intentFilter);
+
+        if (!mIsTV) {
+            // CubeOS: Cube Settings › Software update switches the same settings.
+            getContentResolver().registerContentObserver(
+                    Settings.Global.getUriFor(AutoUpdate.SETTING), false, mAutoUpdateObserver);
+            getContentResolver().registerContentObserver(
+                    Settings.Global.getUriFor(AutoUpdate.SETTING_MOBILE), false,
+                    mAutoUpdateObserver);
+            bindAutoUpdates(false);
+        }
     }
 
     @Override
@@ -266,6 +311,9 @@ public class UpdatesActivity extends UpdatesListActivity implements UpdateImport
     @Override
     public void onStop() {
         LocalBroadcastManager.getInstance(this).unregisterReceiver(mBroadcastReceiver);
+        if (!mIsTV) {
+            getContentResolver().unregisterContentObserver(mAutoUpdateObserver);
+        }
         if (mUpdaterService != null) {
             unbindService(mConnection);
         }
@@ -281,16 +329,8 @@ public class UpdatesActivity extends UpdatesListActivity implements UpdateImport
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int itemId = item.getItemId();
-        if (itemId == R.id.menu_refresh) {
-            downloadUpdatesList(true);
-            return true;
-        } else if (itemId == R.id.menu_preferences) {
+        if (itemId == R.id.menu_preferences) {
             showPreferencesDialog();
-            return true;
-        } else if (itemId == R.id.menu_show_changelog) {
-            Intent openUrl = new Intent(Intent.ACTION_VIEW,
-                    Uri.parse(Utils.getChangelogURL(this)));
-            startActivity(openUrl);
             return true;
         } else if (itemId == R.id.menu_local_update) {
             mUpdateImporter.openImportPicker();
@@ -406,27 +446,37 @@ public class UpdatesActivity extends UpdatesListActivity implements UpdateImport
             controller.deleteUpdate(id);
         }
 
-        if (manualRefresh) {
+        // CubeOS: on phones the hero shows the result ("up to date" / "Update available").
+        if (manualRefresh && mIsTV) {
             showSnackbar(
                     newUpdates ? R.string.snack_updates_found : R.string.snack_no_updates_found,
                     Snackbar.LENGTH_SHORT);
         }
 
+        mListLoaded = true;
         List<String> updateIds = new ArrayList<>();
         List<UpdateInfo> sortedUpdates = controller.getUpdates();
         if (sortedUpdates.isEmpty()) {
-            findViewById(R.id.no_new_updates_view).setVisibility(View.VISIBLE);
-            findViewById(R.id.recycler_view).setVisibility(View.GONE);
+            setUpdatesShown(false);
         } else {
-            findViewById(R.id.no_new_updates_view).setVisibility(View.GONE);
-            findViewById(R.id.recycler_view).setVisibility(View.VISIBLE);
             sortedUpdates.sort((u1, u2) -> Long.compare(u2.getTimestamp(), u1.getTimestamp()));
             for (UpdateInfo update : sortedUpdates) {
                 updateIds.add(update.getDownloadId());
             }
             mAdapter.setData(updateIds);
             mAdapter.notifyDataSetChanged();
+            setUpdatesShown(true);
         }
+    }
+
+    /** Shows the update list, or the "no updates" state, and refreshes the hero to match. */
+    private void setUpdatesShown(boolean shown) {
+        if (!mIsTV) {
+            beginHeroTransition();
+        }
+        findViewById(R.id.no_new_updates_view).setVisibility(shown ? View.GONE : View.VISIBLE);
+        findViewById(R.id.recycler_view).setVisibility(shown ? View.VISIBLE : View.GONE);
+        updateHero();
     }
 
     private void getUpdatesList() {
@@ -460,7 +510,7 @@ public class UpdatesActivity extends UpdatesListActivity implements UpdateImport
             jsonNew.renameTo(json);
         } catch (IOException | JSONException e) {
             Log.e(TAG, "Could not read json", e);
-            showSnackbar(R.string.snack_updates_check_failed, Snackbar.LENGTH_LONG);
+            onCheckFailed();
         }
     }
 
@@ -475,10 +525,10 @@ public class UpdatesActivity extends UpdatesListActivity implements UpdateImport
             public void onFailure(final boolean cancelled) {
                 Log.e(TAG, "Could not download updates list");
                 runOnUiThread(() -> {
-                    if (!cancelled) {
-                        showSnackbar(R.string.snack_updates_check_failed, Snackbar.LENGTH_LONG);
-                    }
                     refreshAnimationStop();
+                    if (!cancelled) {
+                        onCheckFailed();
+                    }
                 });
             }
 
@@ -505,7 +555,7 @@ public class UpdatesActivity extends UpdatesListActivity implements UpdateImport
                     .build();
         } catch (IOException exception) {
             Log.e(TAG, "Could not build download client");
-            showSnackbar(R.string.snack_updates_check_failed, Snackbar.LENGTH_LONG);
+            onCheckFailed();
             return;
         }
 
@@ -513,15 +563,47 @@ public class UpdatesActivity extends UpdatesListActivity implements UpdateImport
         downloadClient.start();
     }
 
+    /** The update check didn't go through: plain words in the hero, a snackbar on TV. */
+    private void onCheckFailed() {
+        if (mIsTV) {
+            showSnackbar(R.string.snack_updates_check_failed, Snackbar.LENGTH_LONG);
+            return;
+        }
+        mCheckFailed = true;
+        updateLastCheckedString();
+        updateHero();
+    }
+
     private void updateLastCheckedString() {
+        TextView headerLastCheck = findViewById(R.id.header_last_check);
         final SharedPreferences preferences =
                 PreferenceManager.getDefaultSharedPreferences(this);
         long lastCheck = preferences.getLong(Constants.PREF_LAST_UPDATE_CHECK, -1) / 1000;
-        String lastCheckString = getString(R.string.header_last_updates_check,
-                StringGenerator.getDateLocalized(this, DateFormat.LONG, lastCheck),
-                StringGenerator.getTimeLocalized(this, lastCheck));
-        TextView headerLastCheck = findViewById(R.id.header_last_check);
-        headerLastCheck.setText(lastCheckString);
+        if (mIsTV) {
+            String lastCheckString = getString(R.string.header_last_updates_check,
+                    StringGenerator.getDateLocalized(this, DateFormat.LONG, lastCheck),
+                    StringGenerator.getTimeLocalized(this, lastCheck));
+            headerLastCheck.setText(lastCheckString);
+            return;
+        }
+        // CubeOS: "Last checked today at 08:46", or plain words when the check failed.
+        if (mCheckFailed && !mChecking) {
+            headerLastCheck.setText(R.string.check_failed_detail);
+        } else if (lastCheck <= 0) {
+            headerLastCheck.setText(R.string.last_checked_never);
+        } else {
+            long millis = lastCheck * 1000;
+            String time = StringGenerator.getTimeLocalized(this, lastCheck);
+            if (DateUtils.isToday(millis)) {
+                headerLastCheck.setText(getString(R.string.last_checked_today, time));
+            } else if (DateUtils.isToday(millis + DateUtils.DAY_IN_MILLIS)) {
+                headerLastCheck.setText(getString(R.string.last_checked_yesterday, time));
+            } else {
+                headerLastCheck.setText(getString(R.string.last_checked_date,
+                        StringGenerator.getDateLocalized(this, DateFormat.LONG, lastCheck),
+                        time));
+            }
+        }
     }
 
     private void handleDownloadStatusChange(String downloadId) {
@@ -530,6 +612,16 @@ public class UpdatesActivity extends UpdatesListActivity implements UpdateImport
         }
 
         UpdateInfo update = mUpdaterService.getUpdaterController().getUpdate(downloadId);
+        if (update == null) {
+            return;
+        }
+        if (!mIsTV) {
+            // CubeOS: the card says what happened; "Download and Install" carries on to install.
+            if (update.getStatus() == UpdateStatus.VERIFIED) {
+                mAdapter.onUpdateVerified(downloadId);
+            }
+            return;
+        }
         switch (update.getStatus()) {
             case PAUSED_ERROR:
                 showSnackbar(R.string.snack_download_failed, Snackbar.LENGTH_LONG);
@@ -570,14 +662,10 @@ public class UpdatesActivity extends UpdatesListActivity implements UpdateImport
 
     private void refreshAnimationStart() {
         if (!mIsTV) {
-            if (mRefreshIconView == null) {
-                mRefreshIconView = findViewById(R.id.menu_refresh);
-            }
-            if (mRefreshIconView != null) {
-                mRefreshAnimation.setRepeatCount(Animation.INFINITE);
-                mRefreshIconView.startAnimation(mRefreshAnimation);
-                mRefreshIconView.setEnabled(false);
-            }
+            mChecking = true;
+            mCheckFailed = false;
+            updateLastCheckedString();
+            updateHero();
         } else {
             findViewById(R.id.recycler_view).setVisibility(View.GONE);
             findViewById(R.id.no_new_updates_view).setVisibility(View.GONE);
@@ -587,10 +675,9 @@ public class UpdatesActivity extends UpdatesListActivity implements UpdateImport
 
     private void refreshAnimationStop() {
         if (!mIsTV) {
-            if (mRefreshIconView != null) {
-                mRefreshAnimation.setRepeatCount(0);
-                mRefreshIconView.setEnabled(true);
-            }
+            mChecking = false;
+            updateLastCheckedString();
+            updateHero();
         } else {
             findViewById(R.id.refresh_progress).setVisibility(View.GONE);
             if (mAdapter.getItemCount() > 0) {
@@ -599,6 +686,174 @@ public class UpdatesActivity extends UpdatesListActivity implements UpdateImport
                 findViewById(R.id.no_new_updates_view).setVisibility(View.VISIBLE);
             }
         }
+    }
+
+    // ------------------------------------------------------------------ CubeOS: the hero
+
+    private void beginHeroTransition() {
+        ViewGroup content = findViewById(R.id.content);
+        TransitionManager.beginDelayedTransition(content, new AutoTransition().setDuration(220));
+    }
+
+    private HeroState computeHeroState() {
+        if (mChecking) {
+            return HeroState.CHECKING;
+        }
+        UpdaterController controller =
+                mUpdaterService != null ? mUpdaterService.getUpdaterController() : null;
+        boolean shown = mAdapter.getItemCount() > 0
+                && findViewById(R.id.recycler_view).getVisibility() == View.VISIBLE;
+        if (controller != null && shown) {
+            for (UpdateInfo update : controller.getUpdates()) {
+                if (controller.isWaitingForReboot(update.getDownloadId())) {
+                    return HeroState.RESTART;
+                }
+            }
+            if (controller.isInstallingUpdate()) {
+                return HeroState.INSTALLING;
+            }
+            if (controller.hasActiveDownloads() || controller.isVerifyingUpdate()) {
+                return HeroState.DOWNLOADING;
+            }
+            return HeroState.AVAILABLE;
+        }
+        if (mCheckFailed) {
+            return HeroState.CHECK_FAILED;
+        }
+        return mListLoaded ? HeroState.UP_TO_DATE : HeroState.UNKNOWN;
+    }
+
+    /** Status line, last-checked line and the Check for Updates button, from the current state. */
+    private void updateHero() {
+        if (mIsTV) {
+            return;
+        }
+        HeroState state = computeHeroState();
+        boolean hasUpdate = state == HeroState.AVAILABLE || state == HeroState.DOWNLOADING
+                || state == HeroState.INSTALLING || state == HeroState.RESTART;
+        String key = state + "/" + mCheckFailed + "/" + hasUpdate;
+        if (key.equals(mHeroKey)) {
+            return;
+        }
+        if (mHeroKey != null) {
+            beginHeroTransition();
+        }
+        mHeroKey = key;
+
+        View status = findViewById(R.id.header_status);
+        ImageView statusIcon = findViewById(R.id.header_status_icon);
+        TextView statusText = findViewById(R.id.header_status_text);
+        int icon = 0;
+        int text = 0;
+        switch (state) {
+            case CHECKING:
+                text = R.string.status_checking;
+                break;
+            case CHECK_FAILED:
+                icon = R.drawable.ic_status_alert;
+                text = R.string.status_check_failed;
+                break;
+            case UP_TO_DATE:
+                icon = R.drawable.ic_status_check;
+                text = R.string.status_up_to_date;
+                break;
+            case AVAILABLE:
+                icon = R.drawable.ic_status_download;
+                text = R.string.status_update_available;
+                break;
+            case DOWNLOADING:
+                icon = R.drawable.ic_status_download;
+                text = R.string.status_downloading;
+                break;
+            case INSTALLING:
+                icon = R.drawable.ic_status_download;
+                text = R.string.status_installing;
+                break;
+            case RESTART:
+                icon = R.drawable.ic_status_restart;
+                text = R.string.status_restart;
+                break;
+            default:
+                break;
+        }
+        if (text == 0) {
+            status.setVisibility(View.INVISIBLE);
+        } else {
+            statusText.setText(text);
+            statusText.setTextColor(getColor(state == HeroState.CHECKING
+                    ? R.color.cube_secondary_label : R.color.cube_label));
+            if (icon != 0) {
+                statusIcon.setImageResource(icon);
+                statusIcon.setVisibility(View.VISIBLE);
+            } else {
+                statusIcon.setVisibility(View.GONE);
+            }
+            status.setVisibility(View.VISIBLE);
+        }
+
+        // Filled when checking is the thing to do; tinted once an update card is the focus.
+        View button = findViewById(R.id.check_button);
+        ProgressBar progress = findViewById(R.id.check_progress);
+        TextView label = findViewById(R.id.check_label);
+        boolean primary = !hasUpdate && !mChecking;
+        button.setBackgroundResource(primary ? R.drawable.bg_pill_primary
+                : R.drawable.bg_pill_tonal);
+        label.setTextColor(getColor(primary ? R.color.cube_on_accent : R.color.cube_accent));
+        progress.setVisibility(mChecking ? View.VISIBLE : View.GONE);
+        label.setText(mChecking ? R.string.action_checking
+                : mCheckFailed ? R.string.action_try_again : R.string.action_check_for_updates);
+        button.setEnabled(!mChecking);
+    }
+
+    // ------------------------------------------------------- CubeOS: Automatic Updates
+
+    /** Reflects cube_auto_update / cube_auto_update_mobile (also switched in Cube Settings). */
+    private void bindAutoUpdates(boolean animate) {
+        if (mIsTV) {
+            return;
+        }
+        boolean on = AutoUpdate.isEnabled(this);
+        boolean mobile = AutoUpdate.mobileAllowed(this);
+        SwitchCompat autoSwitch = findViewById(R.id.auto_update_switch);
+        SwitchCompat mobileSwitch = findViewById(R.id.auto_update_mobile_switch);
+        View mobileGroup = findViewById(R.id.auto_update_mobile_group);
+        TextView footer = findViewById(R.id.auto_update_footer);
+        if (animate && (autoSwitch.isChecked() != on || mobileSwitch.isChecked() != mobile)) {
+            ViewGroup content = findViewById(R.id.content);
+            TransitionManager.beginDelayedTransition(content,
+                    new AutoTransition().setDuration(220));
+        }
+        autoSwitch.setChecked(on);
+        mobileSwitch.setChecked(mobile);
+        mobileGroup.setVisibility(on ? View.VISIBLE : View.GONE);
+        footer.setText(!on ? R.string.auto_update_footer_off
+                : mobile ? R.string.auto_update_footer_on_mobile
+                : R.string.auto_update_footer_on_wifi);
+        View row = findViewById(R.id.auto_update_row);
+        row.setContentDescription(getString(R.string.auto_update_switch));
+        row.setStateDescription(getString(on ? R.string.state_on : R.string.state_off));
+        View mobileRow = findViewById(R.id.auto_update_mobile_row);
+        mobileRow.setContentDescription(getString(R.string.auto_update_mobile));
+        mobileRow.setStateDescription(getString(mobile ? R.string.state_on : R.string.state_off));
+    }
+
+    private void setAutoUpdateSetting(String name, boolean enabled) {
+        try {
+            Settings.Global.putInt(getContentResolver(), name, enabled ? 1 : 0);
+        } catch (SecurityException e) {
+            Log.e(TAG, "Could not change " + name, e);
+            Toast.makeText(this, R.string.auto_update_failed, Toast.LENGTH_SHORT).show();
+        }
+        if (AutoUpdate.SETTING.equals(name)) {
+            // Same as closing Advanced Options: the check schedule follows the setting.
+            if (Utils.isUpdateCheckEnabled(this)) {
+                UpdatesCheckReceiver.scheduleRepeatingUpdatesCheck(this);
+            } else {
+                UpdatesCheckReceiver.cancelRepeatingUpdatesCheck(this);
+                UpdatesCheckReceiver.cancelUpdatesCheck(this);
+            }
+        }
+        bindAutoUpdates(true);
     }
 
     @SuppressLint("ClickableViewAccessibility")

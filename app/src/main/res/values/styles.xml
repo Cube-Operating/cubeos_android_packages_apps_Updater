@@ -3,7 +3,7 @@
     <style name="AppTheme" parent="Theme.AppCompat.DayNight">
         <item name="colorPrimary">@color/theme_primary</item>
         <item name="colorPrimaryDark">@color/theme_primary_dark</item>
-        <item name="colorAccent">@color/theme_accent</item>
+        <item name="colorAccent">@color/cube_accent</item>
         <item name="windowActionModeOverlay">true</item>
         <item name="android:windowLightStatusBar">@bool/theme_is_light</item>
         <item name="android:windowLightNavigationBar">@bool/theme_is_light</item>
@@ -26,6 +26,93 @@
     </style>
 
     <style name="AppTheme.AlertDialogTheme" parent="Theme.AppCompat.DayNight.Dialog.Alert">
-        <item name="dialogCornerRadius">16dp</item>
+        <item name="dialogCornerRadius">24dp</item>
+        <item name="colorAccent">@color/cube_accent</item>
+        <item name="buttonBarPositiveButtonStyle">@style/CubeDialogButton</item>
+        <item name="buttonBarNegativeButtonStyle">@style/CubeDialogButton</item>
+        <item name="buttonBarNeutralButtonStyle">@style/CubeDialogButton</item>
+    </style>
+
+    <!-- CubeOS: Cube Update look -->
+    <style name="CubeDialogButton" parent="Widget.AppCompat.Button.ButtonBar.AlertDialog">
+        <item name="android:textAllCaps">false</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:textColor">@color/cube_accent</item>
+    </style>
+
+    <style name="CubeText">
+        <item name="android:textColor">@color/cube_label</item>
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:includeFontPadding">false</item>
+    </style>
+
+    <style name="CubeText.LargeTitle">
+        <item name="android:textSize">30sp</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:letterSpacing">-0.01</item>
+    </style>
+
+    <style name="CubeText.Headline">
+        <item name="android:textSize">17sp</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+
+    <style name="CubeText.Body">
+        <item name="android:textSize">16sp</item>
+        <item name="android:lineSpacingMultiplier">1.15</item>
+    </style>
+
+    <style name="CubeText.Subhead">
+        <item name="android:textSize">15sp</item>
+        <item name="android:lineSpacingMultiplier">1.15</item>
+    </style>
+
+    <style name="CubeText.Footnote">
+        <item name="android:textSize">13sp</item>
+        <item name="android:textColor">@color/cube_secondary_label</item>
+        <item name="android:lineSpacingMultiplier">1.2</item>
+    </style>
+
+    <style name="CubeText.SectionHeader" parent="CubeText.Footnote">
+        <item name="android:textAllCaps">true</item>
+        <item name="android:letterSpacing">0.04</item>
+    </style>
+
+    <style name="CubePill">
+        <item name="android:layout_height">52dp</item>
+        <item name="android:minWidth">200dp</item>
+        <item name="android:paddingStart">28dp</item>
+        <item name="android:paddingEnd">28dp</item>
+        <item name="android:gravity">center</item>
+        <item name="android:textSize">17sp</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:stateListAnimator">@null</item>
+        <item name="android:elevation">0dp</item>
+        <item name="android:singleLine">true</item>
+    </style>
+
+    <style name="CubePill.Primary">
+        <item name="android:background">@drawable/bg_pill_primary</item>
+        <item name="android:textColor">@color/cube_on_accent</item>
+    </style>
+
+    <style name="CubePill.Tonal">
+        <item name="android:background">@drawable/bg_pill_tonal</item>
+        <item name="android:textColor">@color/cube_accent</item>
+    </style>
+
+    <style name="CubeSwitch">
+        <item name="android:thumb">@drawable/switch_cube_thumb</item>
+        <item name="track">@drawable/switch_cube_track</item>
+        <item name="android:background">@null</item>
+        <item name="showText">false</item>
+        <item name="switchMinWidth">51dp</item>
+    </style>
+
+    <style name="CubeCard">
+        <item name="android:background">@drawable/bg_card</item>
+        <item name="android:layout_marginStart">16dp</item>
+        <item name="android:layout_marginEnd">16dp</item>
     </style>
 </resources>

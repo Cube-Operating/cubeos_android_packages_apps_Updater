@@ -3,8 +3,22 @@
     <color name="theme_primary">#212121</color>
     <color name="theme_primary_dark">#1c1c1c</color>
     <color name="theme_accent">@*android:color/accent_device_default_dark</color>
-    <color name="background">@android:color/system_neutral1_900</color>
+    <color name="background">#000000</color>
     <color name="toolbar_collapsed">@android:color/system_neutral1_700</color>
 
     <color name="inverted">#f5f5f5</color>
+
+    <!-- CubeOS: Cube Update look (grouped background, cards, labels, brand) -->
+    <color name="cube_card">#1C1C1E</color>
+    <color name="cube_label">#FFFFFF</color>
+    <color name="cube_secondary_label">#99EBEBF5</color>
+    <color name="cube_separator">#A6545458</color>
+    <color name="cube_fill">#3D767680</color>
+    <color name="cube_accent">#8F8DFF</color>
+    <color name="cube_accent_tonal">#2E8F8DFF</color>
+    <color name="cube_on_accent">#FFFFFF</color>
+    <color name="cube_green">#30D158</color>
+    <color name="cube_red">#FF453A</color>
+    <color name="cube_switch_thumb">#FFFFFF</color>
+    <color name="cube_switch_track_off">#52787880</color>
 </resources>
