@@ -221,6 +221,22 @@
     <string name="card_waiting_reboot">Update installed. Restart your phone to finish.</string>
     <string name="card_cannot_install">This update can\'t be installed on this phone.</string>
 
+    <!-- CubeOS: every update is checked against what CubeOS published on CUBEX (CubeOSRegistry). -->
+    <string name="card_cubex_verified">Verified on CUBEX. Ready to install.</string>
+    <string name="card_cubex_waiting">Can\'t verify on CUBEX yet. Cube Update keeps trying and won\'t install it until it can.</string>
+    <string name="card_cubex_waiting_override">Still can\'t verify on CUBEX after 7 days. You can install it anyway; CubeOS\'s signature is still checked.</string>
+    <string name="card_cubex_not_deployed">Can\'t verify on CUBEX yet. CubeOS\'s signature on this update was checked.</string>
+    <string name="card_cubex_overridden">Not verified on CUBEX. It installs only because you chose Install Anyway.</string>
+    <string name="card_cubex_no_record">Not published by CubeOS, so it was refused.</string>
+    <string name="card_cubex_mismatch">This update doesn\'t match what CubeOS published, so it was refused.</string>
+    <string name="card_cubex_revoked">CubeOS withdrew this update, so it was refused.</string>
+    <string name="card_cubex_bad_proof">CUBEX\'s answer about this update didn\'t check out, so it was refused.</string>
+    <string name="action_check_again">Check Again</string>
+    <string name="action_install_anyway">Install Anyway</string>
+    <string name="cubex_override_title">Install without CUBEX?</string>
+    <string name="cubex_override_message">For 7 days Cube Update couldn\'t check this update on CUBEX, the record that proves CubeOS really published it. It is signed with CubeOS\'s key, and that is still checked. Install it only if you trust where it came from.</string>
+    <string name="cubex_waiting_notification">Waiting to verify the update on CUBEX</string>
+
     <string name="whats_new_title">What\'s New</string>
     <string name="whats_new_default">Security and reliability improvements for your phone. Your apps, photos and settings stay just as they are.</string>
 

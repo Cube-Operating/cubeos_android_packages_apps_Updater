@@ -99,6 +99,11 @@ public final class AutoUpdate {
             Utils.triggerUpdate(context, id);
         } else if (controller.isDownloading(id) || controller.isVerifyingUpdate(id)) {
             Log.d(TAG, "Already downloading " + id);
+        } else if (update.getStatus() == UpdateStatus.AWAITING_CUBEX) {
+            // Downloaded and signed, not yet checked on CUBEX: ask again. Automatic updates
+            // never use "Install Anyway"; that is the person's choice alone.
+            Log.d(TAG, "Checking " + id + " on CUBEX again");
+            controller.recheckCubex(id);
         } else if (update.getStatus() == UpdateStatus.PAUSED) {
             Log.d(TAG, "Resuming " + id);
             controller.resumeDownload(id);

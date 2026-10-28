@@ -26,6 +26,7 @@ import android.util.Log;
 import androidx.preference.PreferenceManager;
 
 import org.lineageos.updater.misc.Constants;
+import org.lineageos.updater.misc.CubexCheck;
 import org.lineageos.updater.misc.Utils;
 import org.lineageos.updater.model.Update;
 import org.lineageos.updater.model.UpdateStatus;
@@ -166,6 +167,15 @@ class ABUpdateInstaller {
     public void install(File file, String downloadId) {
         if (!file.exists()) {
             Log.e(TAG, "The given update doesn't exist");
+            mUpdaterController.getActualUpdate(downloadId)
+                    .setStatus(UpdateStatus.INSTALLATION_FAILED);
+            mUpdaterController.notifyUpdateChange(downloadId);
+            return;
+        }
+        if (!CubexCheck.isCleared(mContext, file)) {
+            // CubeOS: never hand update_engine a package that wasn't checked on CUBEX (or
+            // explicitly installed anyway after the 7-day warning).
+            Log.e(TAG, downloadId + " isn't cleared on CUBEX, not installing");
             mUpdaterController.getActualUpdate(downloadId)
                     .setStatus(UpdateStatus.INSTALLATION_FAILED);
             mUpdaterController.notifyUpdateChange(downloadId);

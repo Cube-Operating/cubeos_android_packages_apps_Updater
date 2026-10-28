@@ -24,6 +24,7 @@ import android.util.Log;
 import androidx.preference.PreferenceManager;
 
 import org.lineageos.updater.misc.Constants;
+import org.lineageos.updater.misc.CubexCheck;
 import org.lineageos.updater.misc.FileUtils;
 import org.lineageos.updater.misc.Utils;
 import org.lineageos.updater.model.UpdateInfo;
@@ -77,6 +78,15 @@ class UpdateInstaller {
         }
 
         UpdateInfo update = mUpdaterController.getUpdate(downloadId);
+        if (!CubexCheck.isCleared(mContext, update.getFile())) {
+            // CubeOS: never install a package that wasn't checked on CUBEX (or explicitly
+            // installed anyway after the 7-day warning).
+            Log.e(TAG, downloadId + " isn't cleared on CUBEX, not installing");
+            mUpdaterController.getActualUpdate(downloadId)
+                    .setStatus(UpdateStatus.INSTALLATION_FAILED);
+            mUpdaterController.notifyUpdateChange(downloadId);
+            return;
+        }
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(mContext);
         long buildTimestamp = SystemProperties.getLong(Constants.PROP_BUILD_DATE, 0);
         long lastBuildTimestamp = preferences.getLong(Constants.PREF_INSTALL_OLD_TIMESTAMP,

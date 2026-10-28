@@ -19,6 +19,10 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.database.sqlite.SQLiteDatabase;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.PowerManager;
 import android.os.SystemClock;
 import android.util.Log;
@@ -27,6 +31,7 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import org.lineageos.updater.UpdatesDbHelper;
 import org.lineageos.updater.download.DownloadClient;
+import org.lineageos.updater.misc.CubexCheck;
 import org.lineageos.updater.misc.Utils;
 import org.lineageos.updater.model.Update;
 import org.lineageos.updater.model.UpdateInfo;
@@ -66,6 +71,15 @@ public class UpdaterController {
     private int mActiveDownloads = 0;
     private final Set<String> mVerifyingUpdates = new HashSet<>();
 
+    // CubeOS: downloads waiting for CUBEX (misc/CubexCheck) are checked again with exponential
+    // back-off and whenever the phone gets a network; the last verdict of each is kept for the UI.
+    private static final long CUBEX_RETRY_MIN_MS = 60_000L;
+    private static final long CUBEX_RETRY_MAX_MS = 6 * 60 * 60_000L;
+    private final Handler mCubexHandler = new Handler(Looper.getMainLooper());
+    private final Map<String, Long> mCubexRetryDelay = new HashMap<>();
+    private final Map<String, CubexCheck.Outcome> mCubexOutcomes =
+            java.util.Collections.synchronizedMap(new HashMap<>());
+
     public static synchronized UpdaterController getInstance(Context context) {
         if (sUpdaterController == null) {
             sUpdaterController = new UpdaterController(context);
@@ -86,6 +100,23 @@ public class UpdaterController {
 
         for (Update update : mUpdatesDbHelper.getUpdates()) {
             addUpdate(update, false);
+        }
+
+        if (CubexCheck.isDeployed()) {
+            // Every new network is a chance to reach CUBEX for downloads still waiting on it.
+            ConnectivityManager cm = mContext.getSystemService(ConnectivityManager.class);
+            cm.registerDefaultNetworkCallback(new ConnectivityManager.NetworkCallback() {
+                @Override
+                public void onAvailable(Network network) {
+                    for (String id : new ArrayList<>(mDownloads.keySet())) {
+                        DownloadEntry e = mDownloads.get(id);
+                        if (e != null && e.mUpdate.getStatus() == UpdateStatus.AWAITING_CUBEX) {
+                            mCubexRetryDelay.remove(id);
+                            recheckCubex(id);
+                        }
+                    }
+                }
+            }, mCubexHandler);
         }
     }
 
@@ -256,11 +287,10 @@ public class UpdaterController {
                 Update update = entry.mUpdate;
                 File file = update.getFile();
                 if (file.exists() && verifyPackage(file)) {
-                    //noinspection ResultOfMethodCallIgnored
-                    file.setReadable(true, false);
-                    update.setPersistentStatus(UpdateStatus.Persistent.VERIFIED);
-                    mUpdatesDbHelper.changeUpdateStatus(update);
-                    update.setStatus(UpdateStatus.VERIFIED);
+                    // CubeOS: the signature passed; now it must also be what CubeOS published
+                    // on CUBEX. Only then is it VERIFIED (the only status that installs).
+                    applyCubexOutcome(downloadId, update, file,
+                            CubexCheck.check(mContext, file, true));
                 } else {
                     update.setPersistentStatus(UpdateStatus.Persistent.UNKNOWN);
                     mUpdatesDbHelper.removeUpdate(downloadId);
@@ -271,6 +301,145 @@ public class UpdaterController {
                 notifyUpdateChange(downloadId);
             }
         }).start();
+    }
+
+    @SuppressLint("SetWorldReadable")
+    private void applyCubexOutcome(String downloadId, Update update, File file,
+            CubexCheck.Outcome outcome) {
+        mCubexOutcomes.put(downloadId, outcome);
+        switch (outcome.verdict) {
+            case VERIFIED:
+            case OVERRIDDEN:
+            case NOT_DEPLOYED:
+                // NOT_DEPLOYED: the registry isn't pinned in this build, so the signature check
+                // above decides alone (as before the registry existed); the card says so.
+                mCubexHandler.post(() -> mCubexRetryDelay.remove(downloadId));
+                //noinspection ResultOfMethodCallIgnored
+                file.setReadable(true, false);
+                update.setPersistentStatus(UpdateStatus.Persistent.VERIFIED);
+                mUpdatesDbHelper.changeUpdateStatus(update);
+                update.setStatus(UpdateStatus.VERIFIED);
+                break;
+            case WAITING:
+                // Keep the download (its signature passed) and ask CUBEX again later.
+                update.setPersistentStatus(UpdateStatus.Persistent.INCOMPLETE);
+                mUpdatesDbHelper.changeUpdateStatus(update);
+                update.setProgress(100);
+                update.setStatus(UpdateStatus.AWAITING_CUBEX);
+                mCubexHandler.post(() -> scheduleCubexRetry(downloadId));
+                break;
+            case REFUSED:
+            default:
+                // Revoked, not what CubeOS published, or a forged answer: never installable.
+                mCubexHandler.post(() -> mCubexRetryDelay.remove(downloadId));
+                if (file.exists() && !file.delete()) {
+                    Log.e(TAG, "Could not delete refused update " + file);
+                }
+                update.setPersistentStatus(UpdateStatus.Persistent.UNKNOWN);
+                mUpdatesDbHelper.removeUpdate(downloadId);
+                update.setProgress(0);
+                update.setStatus(UpdateStatus.VERIFICATION_FAILED);
+                break;
+        }
+    }
+
+    /** Main thread. Nothing to retry against while the registry address isn't pinned. */
+    private void scheduleCubexRetry(String downloadId) {
+        if (!CubexCheck.isDeployed()) {
+            return;
+        }
+        Long d = mCubexRetryDelay.get(downloadId);
+        long delay = d == null ? CUBEX_RETRY_MIN_MS : d;
+        mCubexRetryDelay.put(downloadId, Math.min(delay * 2, CUBEX_RETRY_MAX_MS));
+        mCubexHandler.removeCallbacksAndMessages(downloadId);
+        mCubexHandler.postDelayed(() -> recheckCubex(downloadId), downloadId, delay);
+    }
+
+    /** The last CUBEX verdict for [downloadId] in this process, or null. */
+    public CubexCheck.Outcome getCubexOutcome(String downloadId) {
+        return mCubexOutcomes.get(downloadId);
+    }
+
+    /**
+     * CubeOS: asks CUBEX again about a download waiting on it (Check Again, a new network, the
+     * back-off timer, automatic updates). The signature already passed for this exact file, so
+     * only the registry is asked; a file without that record is verified from the start.
+     */
+    public void recheckCubex(String downloadId) {
+        DownloadEntry entry = mDownloads.get(downloadId);
+        if (entry == null || entry.mUpdate.getStatus() != UpdateStatus.AWAITING_CUBEX
+                || mVerifyingUpdates.contains(downloadId)) {
+            return;
+        }
+        mCubexHandler.removeCallbacksAndMessages(downloadId);
+        final Update update = entry.mUpdate;
+        final File file = update.getFile();
+        if (file == null || !file.exists()) {
+            update.setStatus(UpdateStatus.PAUSED_ERROR);
+            notifyUpdateChange(downloadId);
+            return;
+        }
+        if (!CubexCheck.isWaiting(mContext, file)) {
+            verifyAgain(downloadId);
+            return;
+        }
+        mVerifyingUpdates.add(downloadId);
+        update.setStatus(UpdateStatus.VERIFYING);
+        notifyUpdateChange(downloadId);
+        new Thread(() -> {
+            applyCubexOutcome(downloadId, update, file, CubexCheck.check(mContext, file, false));
+            mVerifyingUpdates.remove(downloadId);
+            notifyUpdateChange(downloadId);
+        }).start();
+    }
+
+    /** CubeOS: verifies a downloaded file again from the start (signature, then CUBEX). */
+    public void verifyAgain(String downloadId) {
+        DownloadEntry entry = mDownloads.get(downloadId);
+        if (entry == null || isDownloading(downloadId) || mVerifyingUpdates.contains(downloadId)) {
+            return;
+        }
+        File file = entry.mUpdate.getFile();
+        if (file == null || !file.exists()) {
+            return;
+        }
+        entry.mUpdate.setStatus(UpdateStatus.VERIFYING);
+        verifyUpdateAsync(downloadId);
+        notifyUpdateChange(downloadId);
+    }
+
+    /** CubeOS: true when [downloadId] has waited for CUBEX long enough to offer Install Anyway. */
+    public boolean canInstallWithoutCubex(String downloadId) {
+        DownloadEntry entry = mDownloads.get(downloadId);
+        return entry != null && entry.mUpdate.getStatus() == UpdateStatus.AWAITING_CUBEX
+                && entry.mUpdate.getFile() != null
+                && CubexCheck.canOverride(mContext, entry.mUpdate.getFile());
+    }
+
+    /**
+     * CubeOS: "Install Anyway", after the warning. Only for a download whose signature passed and
+     * that has waited for CUBEX for 7 days; it then becomes VERIFIED and installs like any other.
+     */
+    @SuppressLint("SetWorldReadable")
+    public boolean installWithoutCubex(String downloadId) {
+        if (!canInstallWithoutCubex(downloadId)) {
+            return false;
+        }
+        Update update = mDownloads.get(downloadId).mUpdate;
+        File file = update.getFile();
+        if (!CubexCheck.override(mContext, file)) {
+            return false;
+        }
+        mCubexHandler.removeCallbacksAndMessages(downloadId);
+        mCubexRetryDelay.remove(downloadId);
+        mCubexOutcomes.remove(downloadId);
+        //noinspection ResultOfMethodCallIgnored
+        file.setReadable(true, false);
+        update.setPersistentStatus(UpdateStatus.Persistent.VERIFIED);
+        mUpdatesDbHelper.changeUpdateStatus(update);
+        update.setStatus(UpdateStatus.VERIFIED);
+        notifyUpdateChange(downloadId);
+        return true;
     }
 
     private boolean verifyPackage(File file) {
@@ -303,6 +472,15 @@ public class UpdaterController {
                     int progress = Math.round(
                             update.getFile().length() * 100f / update.getFileSize());
                     update.setProgress(progress);
+                }
+                // CubeOS: a download whose signature passed but CUBEX couldn't be asked keeps
+                // waiting for CUBEX after a restart (it isn't re-downloaded or installed).
+                if (update.getPersistentStatus() == UpdateStatus.Persistent.INCOMPLETE
+                        && CubexCheck.isWaiting(mContext, update.getFile())) {
+                    update.setStatus(UpdateStatus.AWAITING_CUBEX);
+                    update.setProgress(100);
+                    final String id = update.getDownloadId();
+                    mCubexHandler.post(() -> scheduleCubexRetry(id));
                 }
                 break;
         }

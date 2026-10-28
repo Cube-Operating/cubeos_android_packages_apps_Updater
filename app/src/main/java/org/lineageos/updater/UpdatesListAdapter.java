@@ -53,6 +53,7 @@ import org.lineageos.updater.controller.UpdaterController;
 import org.lineageos.updater.controller.UpdaterService;
 import org.lineageos.updater.misc.AutoUpdate;
 import org.lineageos.updater.misc.Constants;
+import org.lineageos.updater.misc.CubexCheck;
 import org.lineageos.updater.misc.StringGenerator;
 import org.lineageos.updater.misc.Utils;
 import org.lineageos.updater.model.UpdateInfo;
@@ -102,6 +103,9 @@ public class UpdatesListAdapter extends RecyclerView.Adapter<UpdatesListAdapter.
         DELETE,
         CANCEL_INSTALLATION,
         REBOOT,
+        // CubeOS: a download waiting for CUBEX.
+        CHECK_CUBEX,
+        INSTALL_ANYWAY,
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
@@ -261,6 +265,20 @@ public class UpdatesListAdapter extends RecyclerView.Adapter<UpdatesListAdapter.
                 viewHolder.mProgressText.setText(R.string.list_verifying_update);
             }
             viewHolder.mProgressBar.setIndeterminate(true);
+        } else if (update.getStatus() == UpdateStatus.AWAITING_CUBEX) {
+            // CubeOS: downloaded and signed, but not installable until CUBEX confirms CubeOS
+            // published it. After 7 days without CUBEX, Install Anyway (behind a warning).
+            canDelete = true;
+            boolean override = mUpdaterController.canInstallWithoutCubex(downloadId);
+            int text = override ? R.string.card_cubex_waiting_override
+                    : R.string.card_cubex_waiting;
+            setStatus(viewHolder, text, false);
+            setButtonAction(viewHolder.mAction,
+                    override ? Action.INSTALL_ANYWAY : Action.CHECK_CUBEX, downloadId, !isBusy());
+            viewHolder.mPercentage.setText(null);
+            viewHolder.mProgressText.setText(mCubeLayout ? null : mActivity.getString(text));
+            viewHolder.mProgressBar.setIndeterminate(false);
+            viewHolder.mProgressBar.setProgress(100);
         } else {
             canDelete = true;
             boolean failed = update.getStatus() == UpdateStatus.PAUSED_ERROR;
@@ -310,6 +328,12 @@ public class UpdatesListAdapter extends RecyclerView.Adapter<UpdatesListAdapter.
                 setStatus(viewHolder, R.string.card_install_failed, true);
             } else if (update.getStatus() == UpdateStatus.INSTALLATION_SUSPENDED) {
                 setStatus(viewHolder, R.string.card_install_suspended, false);
+            } else if (CubexCheck.isOverridden(mActivity, update.getFile())) {
+                setStatus(viewHolder, R.string.card_cubex_overridden, false);
+            } else if (CubexCheck.isUnverifiedNotDeployed(mActivity, update.getFile())) {
+                setStatus(viewHolder, R.string.card_cubex_not_deployed, false);
+            } else if (CubexCheck.isCleared(mActivity, update.getFile())) {
+                setStatus(viewHolder, R.string.card_cubex_verified, false);
             } else {
                 setStatus(viewHolder, R.string.card_verified, false);
             }
@@ -323,7 +347,11 @@ public class UpdatesListAdapter extends RecyclerView.Adapter<UpdatesListAdapter.
             boolean failed = update.getStatus() == UpdateStatus.VERIFICATION_FAILED;
             setButtonAction(viewHolder.mAction, Action.DOWNLOAD, downloadId, !isBusy(),
                     failed ? R.string.action_try_again : 0);
-            setStatus(viewHolder, failed ? R.string.card_verification_failed : 0, failed);
+            // CubeOS: when CUBEX refused it, say why (not published, withdrawn, tampered).
+            CubexCheck.Outcome cubex = mUpdaterController.getCubexOutcome(downloadId);
+            int failedText = cubex != null && cubex.verdict == CubexCheck.Verdict.REFUSED
+                    ? cubex.message : R.string.card_verification_failed;
+            setStatus(viewHolder, failed ? failedText : 0, failed);
         }
         String fileSize = Formatter.formatShortFileSize(mActivity, update.getFileSize());
         if (viewHolder.mBuildSize != null) {
@@ -568,6 +596,20 @@ public class UpdatesListAdapter extends RecyclerView.Adapter<UpdatesListAdapter.
                 clickListener = enabled ? view -> getCancelInstallationDialog().show() : null;
             }
             break;
+            case CHECK_CUBEX: {
+                button.setText(R.string.action_check_again);
+                button.setEnabled(enabled);
+                clickListener = enabled ? view -> mUpdaterController.recheckCubex(downloadId)
+                        : null;
+            }
+            break;
+            case INSTALL_ANYWAY: {
+                primary = false;
+                button.setText(R.string.action_install_anyway);
+                button.setEnabled(enabled);
+                clickListener = enabled ? view -> getInstallAnywayDialog(downloadId).show() : null;
+            }
+            break;
             case REBOOT: {
                 button.setText(mCubeLayout ? R.string.action_restart_now : R.string.reboot);
                 button.setEnabled(enabled);
@@ -677,6 +719,25 @@ public class UpdatesListAdapter extends RecyclerView.Adapter<UpdatesListAdapter.
                             Utils.triggerUpdate(mActivity, downloadId);
                             maybeShowInfoDialog();
                         })
+                .setNegativeButton(android.R.string.cancel, null);
+    }
+
+    /**
+     * CubeOS: the warning before installing an update CUBEX couldn't confirm for 7 days. Its
+     * signature was checked; after "Install Anyway" the usual install confirmation follows.
+     */
+    private AlertDialog.Builder getInstallAnywayDialog(final String downloadId) {
+        return new AlertDialog.Builder(mActivity)
+                .setTitle(R.string.cubex_override_title)
+                .setMessage(R.string.cubex_override_message)
+                .setPositiveButton(R.string.action_install_anyway, (dialog, which) -> {
+                    if (mUpdaterController.installWithoutCubex(downloadId)) {
+                        AlertDialog.Builder install = getInstallDialog(downloadId);
+                        if (install != null) {
+                            install.show();
+                        }
+                    }
+                })
                 .setNegativeButton(android.R.string.cancel, null);
     }
 

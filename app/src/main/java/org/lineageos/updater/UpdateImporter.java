@@ -24,6 +24,7 @@ import android.os.ParcelFileDescriptor;
 import android.util.Log;
 
 import org.lineageos.updater.controller.UpdaterController;
+import org.lineageos.updater.misc.CubexCheck;
 import org.lineageos.updater.misc.StringGenerator;
 import org.lineageos.updater.misc.Utils;
 import org.lineageos.updater.model.Update;
@@ -91,7 +92,15 @@ public class UpdateImporter {
                 importedFile = importFile(uri);
                 verifyPackage(importedFile);
 
-                final Update update = buildLocalUpdate(importedFile);
+                // CubeOS: an imported package must also be what CubeOS published on CUBEX.
+                final CubexCheck.Outcome cubex = CubexCheck.check(activity, importedFile, true);
+                if (cubex.verdict == CubexCheck.Verdict.REFUSED) {
+                    throw new Exception("Refused by the CUBEX check: " + cubex.detail);
+                }
+                // VERIFIED, or NOT_DEPLOYED (no registry pinned yet: the signature decides alone).
+                final boolean waiting = cubex.verdict == CubexCheck.Verdict.WAITING;
+                final Update update = buildLocalUpdate(importedFile, waiting);
+                // A waiting one is checked again by the controller (see fixUpdateStatus).
                 addUpdate(update);
                 activity.runOnUiThread(() -> callbacks.onImportCompleted(update));
             } catch (Exception e) {
@@ -141,7 +150,7 @@ public class UpdateImporter {
         return outFile;
     }
 
-    private Update buildLocalUpdate(File file) {
+    private Update buildLocalUpdate(File file, boolean awaitingCubex) {
         final long timeStamp = getTimeStamp(file);
         final String buildDate = StringGenerator.getDateLocalizedUTC(
                 activity, DateFormat.MEDIUM, timeStamp);
@@ -153,8 +162,15 @@ public class UpdateImporter {
         update.setFileSize(file.length());
         update.setDownloadId(Update.LOCAL_ID);
         update.setTimestamp(timeStamp);
-        update.setStatus(UpdateStatus.VERIFIED);
-        update.setPersistentStatus(UpdateStatus.Persistent.VERIFIED);
+        if (awaitingCubex) {
+            // Signed, but not yet checked on CUBEX: it waits, and nothing installs from here.
+            update.setStatus(UpdateStatus.AWAITING_CUBEX);
+            update.setPersistentStatus(UpdateStatus.Persistent.INCOMPLETE);
+            update.setProgress(100);
+        } else {
+            update.setStatus(UpdateStatus.VERIFIED);
+            update.setPersistentStatus(UpdateStatus.Persistent.VERIFIED);
+        }
         update.setVersion(String.format("%s (%s)", name, buildDate));
         return update;
     }

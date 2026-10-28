@@ -33,6 +33,9 @@ android_app {
         "androidx.preference_preference",
         "androidx.recyclerview_recyclerview",
         "com.google.android.material_material",
+    ] + [
+        // CubeOS: the CUBEX light client + CubeOSRegistry verifier (misc/CubexCheck).
+        "cubexlight-lib",
     ],
 
     optimize: {

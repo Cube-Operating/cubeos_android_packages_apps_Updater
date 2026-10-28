@@ -40,6 +40,7 @@ import org.lineageos.updater.UpdaterReceiver;
 import org.lineageos.updater.UpdatesActivity;
 import org.lineageos.updater.misc.AutoUpdate;
 import org.lineageos.updater.misc.Constants;
+import org.lineageos.updater.misc.CubexCheck;
 import org.lineageos.updater.misc.StringGenerator;
 import org.lineageos.updater.misc.Utils;
 import org.lineageos.updater.model.Update;
@@ -212,7 +213,12 @@ public class UpdaterService extends Service {
             if (update.getPersistentStatus() != UpdateStatus.Persistent.VERIFIED) {
                 throw new IllegalArgumentException(update.getDownloadId() + " is not verified");
             }
-            try {
+            if (!CubexCheck.isCleared(this, update.getFile())) {
+                // CubeOS: this exact file has no CUBEX verdict (verified before the check
+                // existed, or changed since): verify it again; it installs only once cleared.
+                Log.w(TAG, downloadId + " isn't cleared on CUBEX, verifying it again");
+                mUpdaterController.verifyAgain(downloadId);
+            } else try {
                 if (Utils.isABUpdate(update.getFile())) {
                     ABUpdateInstaller installer = ABUpdateInstaller.getInstance(this,
                             mUpdaterController);
@@ -374,6 +380,23 @@ public class UpdaterService extends Service {
                 if (AutoUpdate.isEnabled(this) && AutoUpdate.isAutomatic(this, update.getDownloadId())) {
                     Utils.triggerUpdate(this, update.getDownloadId());
                 }
+                tryStopSelf();
+                break;
+            }
+            case AWAITING_CUBEX: {
+                // CubeOS: downloaded and signed, waiting to be checked on CUBEX. Quiet; the card
+                // says more, and nothing installs until the check passes.
+                stopForeground(STOP_FOREGROUND_DETACH);
+                mNotificationBuilder.mActions.clear();
+                mNotificationBuilder.setStyle(null);
+                mNotificationBuilder.setSmallIcon(R.drawable.ic_system_update);
+                mNotificationBuilder.setProgress(0, 0, false);
+                String text = getString(R.string.cubex_waiting_notification);
+                mNotificationBuilder.setContentText(text);
+                mNotificationBuilder.setTicker(text);
+                mNotificationBuilder.setOngoing(false);
+                mNotificationBuilder.setAutoCancel(true);
+                mNotificationManager.notify(NOTIFICATION_ID, mNotificationBuilder.build());
                 tryStopSelf();
                 break;
             }

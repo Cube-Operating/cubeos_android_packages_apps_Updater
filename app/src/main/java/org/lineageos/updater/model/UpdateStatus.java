@@ -29,7 +29,10 @@ public enum UpdateStatus {
     INSTALLED,
     INSTALLATION_FAILED,
     INSTALLATION_CANCELLED,
-    INSTALLATION_SUSPENDED;
+    INSTALLATION_SUSPENDED,
+    // CubeOS: signature verified, waiting to check the update on CUBEX (see misc/CubexCheck).
+    // The file is kept and its persistent status stays INCOMPLETE: nothing installs from here.
+    AWAITING_CUBEX;
 
     public static final class Persistent {
         public static final int UNKNOWN = 0;
