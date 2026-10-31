@@ -44,7 +44,8 @@
     <string name="update_failed_notification">Update failed</string>
     <string name="installation_suspended_notification">Installation suspended</string>
 
-    <string name="new_updates_found_title">New updates</string>
+    <string name="new_updates_found_title">CubeOS update available</string>
+    <string name="new_updates_found_text">Tap to see what\'s new and update your phone.</string>
 
     <string name="text_download_speed">%1$s, %2$s/s</string>
 
@@ -159,7 +160,7 @@
     <string name="blocked_update_info_url" translatable="false">https://wiki.lineageos.org/devices/<xliff:g id="device_name">%1$s</xliff:g>/upgrade/</string>
 
     <string name="export_channel_title">Export completion</string>
-    <string name="new_updates_channel_title">New updates</string>
+    <string name="new_updates_channel_title">Update alerts</string>
     <string name="ongoing_channel_title">Ongoing downloads</string>
     <string name="update_failed_channel_title">Update failed</string>
 

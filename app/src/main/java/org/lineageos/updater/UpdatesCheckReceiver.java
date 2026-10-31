@@ -47,8 +47,10 @@ public class UpdatesCheckReceiver extends BroadcastReceiver {
     private static final String DAILY_CHECK_ACTION = "daily_check_action";
     private static final String ONESHOT_CHECK_ACTION = "oneshot_check_action";
 
-    private static final String NEW_UPDATES_NOTIFICATION_CHANNEL =
+    /** The old silent channel: Android never raises a channel's importance, so it's replaced. */
+    private static final String OLD_UPDATES_NOTIFICATION_CHANNEL =
             "new_updates_notification_channel";
+    private static final String UPDATE_ALERTS_CHANNEL = "cube_update_alerts";
 
     @Override
     public void onReceive(final Context context, Intent intent) {
@@ -91,7 +93,10 @@ public class UpdatesCheckReceiver extends BroadcastReceiver {
             @Override
             public void onSuccess() {
                 try {
-                    if (json.exists() && Utils.checkForNewUpdates(json, jsonNew)) {
+                    // CubeOS: a first check has no list to compare with; any update in it is new.
+                    boolean isNew = json.exists() ? Utils.checkForNewUpdates(json, jsonNew)
+                            : !Utils.parseJson(jsonNew, true).isEmpty();
+                    if (isNew) {
                         showNotification(context);
                         updateRepeatingUpdatesCheck(context);
                     }
@@ -125,23 +130,31 @@ public class UpdatesCheckReceiver extends BroadcastReceiver {
         }
     }
 
+    /** CubeOS: the channel for "update available" and "restart to finish", which must be seen. */
+    public static String updateAlertsChannel(Context context) {
+        NotificationManager notificationManager = context.getSystemService(
+                NotificationManager.class);
+        notificationManager.deleteNotificationChannel(OLD_UPDATES_NOTIFICATION_CHANNEL);
+        notificationManager.createNotificationChannel(new NotificationChannel(
+                UPDATE_ALERTS_CHANNEL,
+                context.getString(R.string.new_updates_channel_title),
+                NotificationManager.IMPORTANCE_HIGH));
+        return UPDATE_ALERTS_CHANNEL;
+    }
+
     private static void showNotification(Context context) {
         NotificationManager notificationManager = context.getSystemService(
                 NotificationManager.class);
-        NotificationChannel notificationChannel = new NotificationChannel(
-                NEW_UPDATES_NOTIFICATION_CHANNEL,
-                context.getString(R.string.new_updates_channel_title),
-                NotificationManager.IMPORTANCE_LOW);
         NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(context,
-                NEW_UPDATES_NOTIFICATION_CHANNEL);
+                updateAlertsChannel(context));
         notificationBuilder.setSmallIcon(R.drawable.ic_system_update);
         Intent notificationIntent = new Intent(context, UpdatesActivity.class);
         PendingIntent intent = PendingIntent.getActivity(context, 0, notificationIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         notificationBuilder.setContentIntent(intent);
         notificationBuilder.setContentTitle(context.getString(R.string.new_updates_found_title));
+        notificationBuilder.setContentText(context.getString(R.string.new_updates_found_text));
         notificationBuilder.setAutoCancel(true);
-        notificationManager.createNotificationChannel(notificationChannel);
         notificationManager.notify(0, notificationBuilder.build());
     }
 
@@ -184,7 +197,9 @@ public class UpdatesCheckReceiver extends BroadcastReceiver {
     }
 
     public static void scheduleUpdatesCheck(Context context) {
-        long millisToNextCheck = AlarmManager.INTERVAL_HOUR * 2;
+        // CubeOS: after a boot without network, or a failed check, try again soon. The alarm doesn't
+        // wake the phone: it runs the next time the phone is awake, so waiting costs no battery.
+        long millisToNextCheck = AlarmManager.INTERVAL_HALF_HOUR;
         PendingIntent updateCheckIntent = getUpdatesCheckIntent(context);
         AlarmManager alarmMgr = context.getSystemService(AlarmManager.class);
         alarmMgr.set(AlarmManager.ELAPSED_REALTIME,

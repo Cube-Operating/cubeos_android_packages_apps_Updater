@@ -29,8 +29,10 @@ import android.util.Log;
 
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
+import org.lineageos.updater.UpdatesCheckReceiver;
 import org.lineageos.updater.UpdatesDbHelper;
 import org.lineageos.updater.download.DownloadClient;
+import org.lineageos.updater.misc.AutoUpdate;
 import org.lineageos.updater.misc.CubexCheck;
 import org.lineageos.updater.misc.Utils;
 import org.lineageos.updater.model.Update;
@@ -235,6 +237,11 @@ public class UpdaterController {
                         removeDownloadClient(entry);
                         update.setStatus(UpdateStatus.PAUSED_ERROR);
                         notifyUpdateChange(downloadId);
+                        // CubeOS: an automatic download comes back by itself and carries on.
+                        if (AutoUpdate.isEnabled(mContext)
+                                && AutoUpdate.isAutomatic(mContext, downloadId)) {
+                            UpdatesCheckReceiver.scheduleUpdatesCheck(mContext);
+                        }
                     }
                 }
                 tryReleaseWakelock();

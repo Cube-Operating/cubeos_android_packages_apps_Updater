@@ -38,6 +38,7 @@ import androidx.preference.PreferenceManager;
 import org.lineageos.updater.R;
 import org.lineageos.updater.UpdaterReceiver;
 import org.lineageos.updater.UpdatesActivity;
+import org.lineageos.updater.UpdatesCheckReceiver;
 import org.lineageos.updater.misc.AutoUpdate;
 import org.lineageos.updater.misc.Constants;
 import org.lineageos.updater.misc.CubexCheck;
@@ -443,15 +444,18 @@ public class UpdaterService extends Service {
                 mNotificationBuilder.setStyle(null);
                 mNotificationBuilder.setSmallIcon(R.drawable.ic_system_update);
                 mNotificationBuilder.setProgress(0, 0, false);
-                String text = getString(R.string.installing_update_finished);
+                // CubeOS: the update only takes effect after a restart, so this one must be seen.
+                String text = getString(R.string.status_restart);
                 mNotificationBuilder.setContentText(text);
                 mNotificationBuilder.addAction(R.drawable.ic_system_update,
-                        getString(R.string.reboot),
+                        getString(R.string.action_restart_now),
                         getRebootPendingIntent());
                 mNotificationBuilder.setTicker(text);
                 mNotificationBuilder.setOngoing(false);
                 mNotificationBuilder.setAutoCancel(true);
+                mNotificationBuilder.setChannelId(UpdatesCheckReceiver.updateAlertsChannel(this));
                 mNotificationManager.notify(NOTIFICATION_ID, mNotificationBuilder.build());
+                mNotificationBuilder.setChannelId(ONGOING_NOTIFICATION_CHANNEL);
 
                 SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(this);
                 boolean deleteUpdate = pref.getBoolean(Constants.PREF_AUTO_DELETE_UPDATES, false);

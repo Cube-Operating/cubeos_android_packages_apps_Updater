@@ -104,7 +104,11 @@ public final class AutoUpdate {
             // never use "Install Anyway"; that is the person's choice alone.
             Log.d(TAG, "Checking " + id + " on CUBEX again");
             controller.recheckCubex(id);
-        } else if (update.getStatus() == UpdateStatus.PAUSED) {
+        } else if ((update.getStatus() == UpdateStatus.PAUSED
+                || update.getStatus() == UpdateStatus.PAUSED_ERROR)
+                && update.getFile() != null && update.getFile().exists()) {
+            // After a dropped connection too: starting over would lose the progress and leave the
+            // partial file behind, and on a weak connection the download might never finish.
             Log.d(TAG, "Resuming " + id);
             controller.resumeDownload(id);
         } else {
