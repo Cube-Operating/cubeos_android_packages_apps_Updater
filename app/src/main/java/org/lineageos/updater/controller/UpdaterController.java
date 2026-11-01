@@ -29,7 +29,6 @@ import android.util.Log;
 
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
-import org.lineageos.updater.UpdatesCheckReceiver;
 import org.lineageos.updater.UpdatesDbHelper;
 import org.lineageos.updater.download.DownloadClient;
 import org.lineageos.updater.misc.AutoUpdate;
@@ -218,6 +217,7 @@ public class UpdaterController {
                     Update update = entry.mUpdate;
                     update.setStatus(UpdateStatus.VERIFYING);
                     removeDownloadClient(entry);
+                    AutoUpdate.cancelRetry(mContext);
                     verifyUpdateAsync(downloadId);
                     notifyUpdateChange(downloadId);
                     tryReleaseWakelock();
@@ -240,7 +240,8 @@ public class UpdaterController {
                         // CubeOS: an automatic download comes back by itself and carries on.
                         if (AutoUpdate.isEnabled(mContext)
                                 && AutoUpdate.isAutomatic(mContext, downloadId)) {
-                            UpdatesCheckReceiver.scheduleUpdatesCheck(mContext);
+                            File file = update.getFile();
+                            AutoUpdate.scheduleRetry(mContext, file != null ? file.length() : 0);
                         }
                     }
                 }
@@ -637,6 +638,7 @@ public class UpdaterController {
         if (entry != null) {
             entry.mDownloadClient.cancel();
             removeDownloadClient(entry);
+            AutoUpdate.cancelRetry(mContext);
             entry.mUpdate.setStatus(UpdateStatus.PAUSED);
             entry.mUpdate.setEta(0);
             entry.mUpdate.setSpeed(0);
@@ -662,6 +664,7 @@ public class UpdaterController {
         DownloadEntry entry = mDownloads.get(downloadId);
         if (entry != null) {
             Update update = entry.mUpdate;
+            AutoUpdate.cancelRetry(mContext);
             update.setStatus(UpdateStatus.DELETED);
             update.setProgress(0);
             update.setPersistentStatus(UpdateStatus.Persistent.UNKNOWN);

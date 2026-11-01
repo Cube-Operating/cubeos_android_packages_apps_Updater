@@ -200,7 +200,8 @@ public class UpdaterService extends Service {
             // Started from the background: be a foreground service straight away.
             mNotificationBuilder.mActions.clear();
             mNotificationBuilder.setSmallIcon(R.drawable.ic_system_update);
-            mNotificationBuilder.setContentText(getString(R.string.download_starting_notification));
+            mNotificationStyle.bigText(getString(R.string.download_starting_notification));
+            mNotificationBuilder.setStyle(mNotificationStyle);
             mNotificationBuilder.setProgress(0, 0, true);
             startForeground(NOTIFICATION_ID, mNotificationBuilder.build(),
                     ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);

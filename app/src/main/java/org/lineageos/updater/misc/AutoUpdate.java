@@ -4,6 +4,9 @@
  */
 package org.lineageos.updater.misc;
 
+import android.app.job.JobInfo;
+import android.app.job.JobScheduler;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -13,6 +16,7 @@ import android.util.Log;
 import androidx.preference.PreferenceManager;
 
 import org.json.JSONException;
+import org.lineageos.updater.controller.DownloadRetryJob;
 import org.lineageos.updater.controller.UpdaterController;
 import org.lineageos.updater.controller.UpdaterService;
 import org.lineageos.updater.model.UpdateInfo;
@@ -37,6 +41,12 @@ public final class AutoUpdate {
     public static final String SETTING = "cube_auto_update";
     public static final String SETTING_MOBILE = "cube_auto_update_mobile";
     private static final String PREF_AUTO_ID = "cube_auto_update_id";
+    private static final String PREF_RETRY_DELAY = "cube_auto_update_retry_delay";
+    private static final String PREF_RETRY_BYTES = "cube_auto_update_retry_bytes";
+
+    private static final int RETRY_JOB_ID = 1;
+    private static final long RETRY_MIN_MS = 30_000L;
+    private static final long RETRY_MAX_MS = 30 * 60_000L;
 
     private AutoUpdate() {
     }
@@ -75,6 +85,46 @@ public final class AutoUpdate {
         Intent intent = new Intent(context, UpdaterService.class);
         intent.setAction(UpdaterService.ACTION_AUTO_UPDATE);
         context.startForegroundService(intent);
+    }
+
+    /**
+     * After a dropped download: tries again soon, once the phone has a network it may use. A file
+     * that grew since the last failure starts the wait from the beginning again.
+     */
+    public static void scheduleRetry(Context context, long downloadedBytes) {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+        long delay = downloadedBytes > prefs.getLong(PREF_RETRY_BYTES, 0)
+                ? RETRY_MIN_MS : prefs.getLong(PREF_RETRY_DELAY, RETRY_MIN_MS);
+        context.getSystemService(JobScheduler.class).schedule(new JobInfo.Builder(RETRY_JOB_ID,
+                new ComponentName(context, DownloadRetryJob.class))
+                .setMinimumLatency(delay)
+                .setRequiredNetworkType(mobileAllowed(context)
+                        ? JobInfo.NETWORK_TYPE_ANY : JobInfo.NETWORK_TYPE_UNMETERED)
+                .build());
+        prefs.edit()
+                .putLong(PREF_RETRY_BYTES, downloadedBytes)
+                .putLong(PREF_RETRY_DELAY, Math.min(delay * 2, RETRY_MAX_MS))
+                .apply();
+        Log.d(TAG, "Retrying the download in " + delay + " ms");
+    }
+
+    /** The download finished, or the person paused or deleted it: no more retries. */
+    public static void cancelRetry(Context context) {
+        context.getSystemService(JobScheduler.class).cancel(RETRY_JOB_ID);
+        PreferenceManager.getDefaultSharedPreferences(context).edit()
+                .remove(PREF_RETRY_BYTES)
+                .remove(PREF_RETRY_DELAY)
+                .apply();
+    }
+
+    /** The retry's time has come: carries on, or waits longer if the network isn't usable yet. */
+    public static void retry(Context context) {
+        if (canDownloadNow(context)) {
+            maybeStart(context);
+        } else if (isEnabled(context)) {
+            scheduleRetry(context, PreferenceManager.getDefaultSharedPreferences(context)
+                    .getLong(PREF_RETRY_BYTES, 0));
+        }
     }
 
     /**
