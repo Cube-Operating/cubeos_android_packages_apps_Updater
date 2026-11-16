@@ -33,6 +33,8 @@ import org.json.JSONException;
 import org.lineageos.updater.download.DownloadClient;
 import org.lineageos.updater.misc.AutoUpdate;
 import org.lineageos.updater.misc.Constants;
+import org.lineageos.updater.misc.CubeUpdateState;
+import org.lineageos.updater.misc.UpdateSchedule;
 import org.lineageos.updater.misc.Utils;
 
 import java.io.File;
@@ -46,6 +48,15 @@ public class UpdatesCheckReceiver extends BroadcastReceiver {
 
     private static final String DAILY_CHECK_ACTION = "daily_check_action";
     private static final String ONESHOT_CHECK_ACTION = "oneshot_check_action";
+    /** CubeOS: a check the person asked for (Settings): runs even with scheduled checks off. */
+    private static final String MANUAL_CHECK_ACTION = "manual_check_action";
+
+    /** CubeOS: fetch the update list now (Cube Settings › Software update). */
+    public static void checkNow(Context context) {
+        Intent intent = new Intent(context, UpdatesCheckReceiver.class);
+        intent.setAction(MANUAL_CHECK_ACTION);
+        context.sendBroadcast(intent);
+    }
 
     /** The old silent channel: Android never raises a channel's importance, so it's replaced. */
     private static final String OLD_UPDATES_NOTIFICATION_CHANNEL =
@@ -56,12 +67,16 @@ public class UpdatesCheckReceiver extends BroadcastReceiver {
     public void onReceive(final Context context, Intent intent) {
         if (Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction())) {
             Utils.cleanupDownloadsDir(context);
+            // CubeOS: a waiting update is now running; a scheduled update needs its alarm again.
+            CubeUpdateState.afterBoot(context);
+            UpdateSchedule.rearm(context);
         }
 
         final SharedPreferences preferences =
                 PreferenceManager.getDefaultSharedPreferences(context);
+        final boolean manual = MANUAL_CHECK_ACTION.equals(intent.getAction());
 
-        if (!Utils.isUpdateCheckEnabled(context)) {
+        if (!manual && !Utils.isUpdateCheckEnabled(context)) {
             return;
         }
 
@@ -72,6 +87,9 @@ public class UpdatesCheckReceiver extends BroadcastReceiver {
 
         if (!Utils.isNetworkAvailable(context)) {
             Log.d(TAG, "Network not available, scheduling new check");
+            if (manual) {
+                CubeUpdateState.checkFailed(context);
+            }
             scheduleUpdatesCheck(context);
             return;
         }
@@ -83,6 +101,7 @@ public class UpdatesCheckReceiver extends BroadcastReceiver {
             @Override
             public void onFailure(boolean cancelled) {
                 Log.e(TAG, "Could not download updates list, scheduling new check");
+                CubeUpdateState.checkFailed(context);
                 scheduleUpdatesCheck(context);
             }
 
@@ -108,10 +127,13 @@ public class UpdatesCheckReceiver extends BroadcastReceiver {
                             .apply();
                     // In case we set a one-shot check because of a previous failure
                     cancelUpdatesCheck(context);
+                    // CubeOS: Settings › Software update shows what's waiting (or "up to date").
+                    CubeUpdateState.afterCheck(context);
                     // CubeOS: download and install the newest build if automatic updates are on.
                     AutoUpdate.maybeStart(context);
                 } catch (IOException | JSONException e) {
                     Log.e(TAG, "Could not parse list, scheduling new check", e);
+                    CubeUpdateState.checkFailed(context);
                     scheduleUpdatesCheck(context);
                 }
             }

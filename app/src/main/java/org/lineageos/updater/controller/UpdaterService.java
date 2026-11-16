@@ -41,7 +41,9 @@ import org.lineageos.updater.UpdatesActivity;
 import org.lineageos.updater.UpdatesCheckReceiver;
 import org.lineageos.updater.misc.AutoUpdate;
 import org.lineageos.updater.misc.Constants;
+import org.lineageos.updater.misc.CubeUpdateState;
 import org.lineageos.updater.misc.CubexCheck;
+import org.lineageos.updater.misc.UpdateSchedule;
 import org.lineageos.updater.misc.StringGenerator;
 import org.lineageos.updater.misc.Utils;
 import org.lineageos.updater.model.Update;
@@ -115,6 +117,7 @@ public class UpdaterService extends Service {
                 String downloadId = intent.getStringExtra(UpdaterController.EXTRA_DOWNLOAD_ID);
                 if (UpdaterController.ACTION_UPDATE_STATUS.equals(intent.getAction())) {
                     UpdateInfo update = mUpdaterController.getUpdate(downloadId);
+                    CubeUpdateState.publish(UpdaterService.this, update);
                     setNotificationTitle(update);
                     Bundle extras = new Bundle();
                     extras.putString(UpdaterController.EXTRA_DOWNLOAD_ID, downloadId);
@@ -122,9 +125,15 @@ public class UpdaterService extends Service {
                     handleUpdateStatusChange(update);
                 } else if (UpdaterController.ACTION_DOWNLOAD_PROGRESS.equals(intent.getAction())) {
                     UpdateInfo update = mUpdaterController.getUpdate(downloadId);
+                    if (update != null) {
+                        CubeUpdateState.progress(UpdaterService.this, update.getProgress());
+                    }
                     handleDownloadProgressChange(update);
                 } else if (UpdaterController.ACTION_INSTALL_PROGRESS.equals(intent.getAction())) {
                     UpdateInfo update = mUpdaterController.getUpdate(downloadId);
+                    if (update != null) {
+                        CubeUpdateState.progress(UpdaterService.this, update.getInstallProgress());
+                    }
                     setNotificationTitle(update);
                     handleInstallProgress(update);
                 } else if (UpdaterController.ACTION_UPDATE_REMOVED.equals(intent.getAction())) {
@@ -378,8 +387,8 @@ public class UpdaterService extends Service {
                 mNotificationBuilder.setOngoing(false);
                 mNotificationBuilder.setAutoCancel(true);
                 mNotificationManager.notify(NOTIFICATION_ID, mNotificationBuilder.build());
-                // CubeOS: a download automatic updates started installs by itself.
-                if (AutoUpdate.isEnabled(this) && AutoUpdate.isAutomatic(this, update.getDownloadId())) {
+                // CubeOS: a download automatic updates (or "Update now") started installs by itself.
+                if (AutoUpdate.mayInstall(this, update.getDownloadId())) {
                     Utils.triggerUpdate(this, update.getDownloadId());
                 }
                 tryStopSelf();
@@ -457,6 +466,14 @@ public class UpdaterService extends Service {
                 mNotificationBuilder.setChannelId(UpdatesCheckReceiver.updateAlertsChannel(this));
                 mNotificationManager.notify(NOTIFICATION_ID, mNotificationBuilder.build());
                 mNotificationBuilder.setChannelId(ONGOING_NOTIFICATION_CHANNEL);
+
+                // CubeOS: finish by itself — at once if the person scheduled this update, else
+                // tonight while charging (automatic updates).
+                if (UpdateSchedule.consumeRestartWhenInstalled(this)) {
+                    UpdateSchedule.restartNowOrTonight(this);
+                } else {
+                    NightlyRestartJob.schedule(this);
+                }
 
                 SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(this);
                 boolean deleteUpdate = pref.getBoolean(Constants.PREF_AUTO_DELETE_UPDATES, false);

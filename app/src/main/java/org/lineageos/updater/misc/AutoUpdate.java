@@ -43,6 +43,10 @@ public final class AutoUpdate {
     private static final String PREF_AUTO_ID = "cube_auto_update_id";
     private static final String PREF_RETRY_DELAY = "cube_auto_update_retry_delay";
     private static final String PREF_RETRY_BYTES = "cube_auto_update_retry_bytes";
+    /** Set by "Update now" in Cube Settings until the next update list arrives. */
+    private static final String PREF_REQUESTED = "cube_update_now_requested";
+    /** The build the person asked for with "Update now": it installs once verified. */
+    private static final String PREF_REQUESTED_ID = "cube_update_now_id";
 
     private static final int RETRY_JOB_ID = 1;
     private static final long RETRY_MIN_MS = 30_000L;
@@ -77,9 +81,38 @@ public final class AutoUpdate {
                 .putString(PREF_AUTO_ID, downloadId).apply();
     }
 
-    /** Asks UpdaterService to run automatic updates now, if they're on and the network allows. */
+    /** "Update now" from Cube Settings: the next update list starts the newest build at once. */
+    public static void requestNow(Context context) {
+        PreferenceManager.getDefaultSharedPreferences(context).edit()
+                .putBoolean(PREF_REQUESTED, true).apply();
+    }
+
+    private static boolean isRequested(Context context) {
+        return PreferenceManager.getDefaultSharedPreferences(context).getBoolean(PREF_REQUESTED, false);
+    }
+
+    /** True when [downloadId] may install by itself: automatic updates, or the person asked for it. */
+    public static boolean mayInstall(Context context, String downloadId) {
+        if (downloadId == null) {
+            return false;
+        }
+        if (isEnabled(context) && isAutomatic(context, downloadId)) {
+            return true;
+        }
+        return downloadId.equals(PreferenceManager.getDefaultSharedPreferences(context)
+                .getString(PREF_REQUESTED_ID, null));
+    }
+
+    /**
+     * Asks UpdaterService to run automatic updates now, if they're on and the network allows,
+     * or straight away (any network) when the person tapped "Update now".
+     */
     public static void maybeStart(Context context) {
-        if (!isEnabled(context) || !canDownloadNow(context)) {
+        boolean requested = isRequested(context);
+        if (!requested && (!isEnabled(context) || !canDownloadNow(context))) {
+            return;
+        }
+        if (requested && !Utils.isNetworkAvailable(context)) {
             return;
         }
         Intent intent = new Intent(context, UpdaterService.class);
@@ -133,6 +166,9 @@ public final class AutoUpdate {
      */
     public static boolean run(Context context, UpdaterController controller) {
         UpdateInfo newest = newestInstallable(context);
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+        boolean requested = prefs.getBoolean(PREF_REQUESTED, false);
+        prefs.edit().remove(PREF_REQUESTED).apply();
         if (newest == null || controller.isInstallingUpdate()) {
             return false;
         }
@@ -142,6 +178,9 @@ public final class AutoUpdate {
         if (update == null || controller.isWaitingForReboot(id)
                 || update.getStatus() == UpdateStatus.INSTALLED) {
             return false;
+        }
+        if (requested) {
+            prefs.edit().putString(PREF_REQUESTED_ID, id).apply();
         }
         markAutomatic(context, id);
         if (update.getPersistentStatus() == UpdateStatus.Persistent.VERIFIED) {

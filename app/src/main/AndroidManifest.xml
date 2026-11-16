@@ -15,6 +15,12 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <!-- CubeOS: the Automatic Updates switches (Settings.Global cube_auto_update*) -->
     <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS" />
+    <!-- CubeOS: Cube Settings › Software update may check, update now, schedule and restart.
+         Signature-only: CubeOS's own platform-signed apps. -->
+    <permission
+        android:name="org.cubeapp.permission.SYSTEM_UPDATE"
+        android:protectionLevel="signature" />
+    <uses-permission android:name="org.cubeapp.permission.SYSTEM_UPDATE" />
 
     <application
         android:allowBackup="false"
@@ -56,6 +62,23 @@
             android:name=".controller.DownloadRetryJob"
             android:exported="false"
             android:permission="android.permission.BIND_JOB_SERVICE"/>
+        <!-- CubeOS: restarts at night while charging to finish an installed update -->
+        <service
+            android:name=".controller.NightlyRestartJob"
+            android:exported="false"
+            android:permission="android.permission.BIND_JOB_SERVICE"/>
+        <receiver
+            android:name=".CubeUpdateControlReceiver"
+            android:exported="true"
+            android:permission="org.cubeapp.permission.SYSTEM_UPDATE">
+            <intent-filter>
+                <action android:name="org.cubeapp.updater.action.CHECK" />
+                <action android:name="org.cubeapp.updater.action.UPDATE_NOW" />
+                <action android:name="org.cubeapp.updater.action.RESTART" />
+                <action android:name="org.cubeapp.updater.action.SCHEDULE" />
+                <action android:name="org.cubeapp.updater.action.SCHEDULED_RUN" />
+            </intent-filter>
+        </receiver>
         <service
             android:name=".ExportUpdateService"
             android:foregroundServiceType="specialUse">
